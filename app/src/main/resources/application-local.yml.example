@@ -3,9 +3,9 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/sportspub_db
-    username: sportspub
-    password: sportspub
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sportspub_db}
+    username: ${DB_USERNAME:sportspub}
+    password: ${DB_PASSWORD:sportspub}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
