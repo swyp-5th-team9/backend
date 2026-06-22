@@ -77,6 +77,17 @@ public class AuthService {
         return createTokenResponse(storedRefreshToken.getUser());
     }
 
+    /*
+     * 현재 정책은 사용자당 활성 RefreshToken 1개 유지이며, 로그아웃 시 서버가 인정하는 RefreshToken을 삭제한다.
+     *
+     * JwtAuthenticationFilter가 SecurityContext에 userId를 principal로 저장하므로,
+     * Controller는 인증된 userId만 전달하고 AuthService가 해당 사용자의 RefreshToken 제거를 담당한다.
+     */
+    @Transactional
+    public void logout(Long userId) {
+        refreshTokenRepository.deleteByUserUserId(userId);
+    }
+
     @Transactional
     public LoginResponse loginWithNaver(String accessToken) {
         NaverUserInfo userInfo = naverClient.getUserInfo(accessToken);

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -92,5 +93,27 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public ApiResponse<TokenResponse> reissue(@Valid @RequestBody TokenReissueRequest request) {
         return ApiResponse.success(authService.reissue(request.refreshToken()));
+    }
+
+    /*
+     * JwtAuthenticationFilter는 인증 성공 시 SecurityContext principal에 userId(Long)를 저장한다.
+     * 따라서 현재 MVP 구조에서는 별도 UserDetails 없이 @AuthenticationPrincipal Long userId로 현재 사용자를 식별한다.
+     */
+    @Operation(
+            summary = "로그아웃",
+            description = """
+                    현재 인증된 사용자의 RefreshToken을 삭제한다.
+                    이후 기존 RefreshToken으로는 토큰 재발급을 받을 수 없다.
+                    """
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@AuthenticationPrincipal Long userId) {
+        authService.logout(userId);
+        return ApiResponse.success();
     }
 }

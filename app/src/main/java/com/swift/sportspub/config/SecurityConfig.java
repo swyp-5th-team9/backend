@@ -35,11 +35,12 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/oauth2/**",
                                 "/login/**",
-                                "/api/v1/auth/**"
+                                "/api/v1/auth/login/**",
+                                "/api/v1/auth/refresh-token"
                         ).permitAll()
                         /*
-                         * 로그인 API는 아직 JWT가 없는 사용자가 호출해야 하므로 permitAll로 둔다.
-                         * 그 외 API는 발급받은 JWT를 Authorization: Bearer 헤더로 보내야 접근할 수 있다.
+                         * 로그인/재발급 API는 아직 유효한 AccessToken이 없는 상황에서도 호출해야 하므로 permitAll로 둔다.
+                         * 로그아웃을 포함한 그 외 API는 발급받은 JWT를 Authorization: Bearer 헤더로 보내야 접근할 수 있다.
                          */
                         .anyRequest().authenticated()
                 )
