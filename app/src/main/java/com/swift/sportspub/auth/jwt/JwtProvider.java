@@ -14,6 +14,10 @@ import java.util.Date;
 @Component
 public class JwtProvider {
 
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "ACCESS";
+    private static final String REFRESH_TOKEN_TYPE = "REFRESH";
+
     private final SecretKey secretKey;
     private final long accessTtlSeconds;
     private final long refreshTtlSeconds;
@@ -34,13 +38,16 @@ public class JwtProvider {
      * AccessToken은 API 요청 인증에 자주 사용되므로 짧게 유지해 탈취 피해를 줄이고,
      * RefreshToken은 AccessToken 재발급에만 사용해 사용 빈도와 노출 범위를 낮춘다.
      * 이후 RefreshToken 저장소를 도입하면 재발급, 로그아웃, 토큰 회전 정책을 독립적으로 확장할 수 있다.
+     *
+     * type claim을 함께 저장해 AccessToken과 RefreshToken을 구조적으로 구분한다.
+     * 이렇게 해야 수명이 긴 RefreshToken이 인증용 AccessToken처럼 사용되는 것을 막을 수 있다.
      */
     public String createAccessToken(Long userId) {
-        return createToken(userId, accessTtlSeconds);
+        return createToken(userId, accessTtlSeconds, ACCESS_TOKEN_TYPE);
     }
 
     public String createRefreshToken(Long userId) {
-        return createToken(userId, refreshTtlSeconds);
+        return createToken(userId, refreshTtlSeconds, REFRESH_TOKEN_TYPE);
     }
 
     /*
@@ -60,6 +67,23 @@ public class JwtProvider {
         return Long.valueOf(subject);
     }
 
+    public String extractTokenType(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get(TOKEN_TYPE_CLAIM, String.class);
+    }
+
+    public boolean isAccessToken(String token) {
+        return ACCESS_TOKEN_TYPE.equals(extractTokenType(token));
+    }
+
+    public boolean isRefreshToken(String token) {
+        return REFRESH_TOKEN_TYPE.equals(extractTokenType(token));
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -72,12 +96,13 @@ public class JwtProvider {
         }
     }
 
-    private String createToken(Long userId, long ttlSeconds) {
+    private String createToken(Long userId, long ttlSeconds, String tokenType) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(ttlSeconds);
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
