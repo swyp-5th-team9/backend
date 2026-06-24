@@ -19,7 +19,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +58,7 @@ public class AuthService {
     /*
      * RefreshToken 재발급은 Rotation 방식으로 처리한다.
      *
-     * 요청으로 들어온 RefreshToken이 JWT로 유효하고, DB에 저장된 토큰과 정확히 일치할 때만
+     * 요청으로 들어온 RefreshToken이 JWT로 유효하고, DB에 저장된 토큰 해시와 일치할 때만
      * 새 AccessToken과 RefreshToken을 발급한다. 재발급 성공 시 기존 RefreshToken은 더 이상
      * 사용할 수 없도록 삭제하고 새 RefreshToken만 저장해 탈취 토큰의 재사용 가능성을 줄인다.
      */
@@ -63,12 +67,12 @@ public class AuthService {
         validateRefreshToken(refreshToken);
 
         Long userId = jwtProvider.extractUserId(refreshToken);
-        RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
+        String refreshTokenHash = hashRefreshToken(refreshToken);
+        RefreshToken storedRefreshToken = refreshTokenRepository.findByTokenHash(refreshTokenHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE));
 
-        if (!storedRefreshToken.getToken().equals(refreshToken)
+        if (!storedRefreshToken.getTokenHash().equals(refreshTokenHash)
                 || !storedRefreshToken.getUser().getUserId().equals(userId)
-                || storedRefreshToken.isRevoked()
                 || storedRefreshToken.isExpired()) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE);
         }
@@ -123,7 +127,8 @@ public class AuthService {
      * 로그인 성공 후 같은 User 식별자(userId)를 기준으로 AccessToken과 RefreshToken을 발급한다.
      *
      * AccessToken은 API 요청 인증에 사용되고, RefreshToken은 AccessToken 재발급을 위한 토큰이다.
-     * RefreshToken은 서버 DB에도 저장해 이후 재발급 요청이 "서버가 현재 인정하는 토큰"인지 확인한다.
+     * RefreshToken은 서버 DB에 SHA-256 해시로 저장해 이후 재발급 요청이
+     * "서버가 현재 인정하는 토큰"인지 확인한다.
      */
     private LoginResponse createLoginResponse(User user) {
         TokenResponse tokenResponse = createTokenResponse(user);
@@ -156,7 +161,7 @@ public class AuthService {
         refreshTokenRepository.deleteByUserUserId(user.getUserId());
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
-                .token(refreshToken)
+                .tokenHash(hashRefreshToken(refreshToken))
                 .expiresAt(LocalDateTime.now().plusSeconds(refreshTtlSeconds))
                 .build());
     }
@@ -170,6 +175,16 @@ public class AuthService {
     private void validateRefreshToken(String refreshToken) {
         if (!jwtProvider.validateToken(refreshToken) || !jwtProvider.isRefreshToken(refreshToken)) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE);
+        }
+    }
+
+    private String hashRefreshToken(String refreshToken) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            byte[] digest = messageDigest.digest(refreshToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm is not available.", e);
         }
     }
 }
