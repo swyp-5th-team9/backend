@@ -2,12 +2,14 @@ package com.swift.sportspub.user.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
 import com.swift.sportspub.user.dto.OnboardingRequest;
+import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,5 +45,10 @@ public class UserController {
     ) {
         userService.onboarding(userId, request);
         return ApiResponse.success();
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<UserResponse> getMyInfo(@AuthenticationPrincipal Long userId) {
+        return ApiResponse.success(userService.getMyInfo(userId));
     }
 }

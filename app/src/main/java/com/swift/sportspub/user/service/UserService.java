@@ -1,12 +1,15 @@
 package com.swift.sportspub.user.service;
 
 import com.swift.sportspub.user.dto.OnboardingRequest;
+import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.exception.UserNotFoundException;
 import com.swift.sportspub.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,12 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getMyInfo(Long userId) {
+        User user = getUser(userId);
+        return toUserResponse(user);
+    }
+
     /*
      * teamIds는 현재 최대 개수 검증만 수행한다.
      * 선호 구단 저장은 #12에서 Team/UserFavoriteTeam 구조를 만들 때 함께 연결한다.
@@ -32,5 +41,15 @@ public class UserService {
     public void onboarding(Long userId, OnboardingRequest request) {
         User user = getUser(userId);
         user.completeOnboarding(request.nickname());
+    }
+
+    private UserResponse toUserResponse(User user) {
+        return new UserResponse(
+                user.getUserId(),
+                user.getNickname(),
+                user.getRole(),
+                user.isOnboardingCompleted(),
+                List.of()
+        );
     }
 }
