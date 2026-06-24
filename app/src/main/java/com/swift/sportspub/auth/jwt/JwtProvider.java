@@ -40,7 +40,7 @@ public class JwtProvider {
      * 이후 RefreshToken 저장소를 도입하면 재발급, 로그아웃, 토큰 회전 정책을 독립적으로 확장할 수 있다.
      *
      * type claim을 함께 저장해 AccessToken과 RefreshToken을 구조적으로 구분한다.
-     * 이렇게 해야 수명이 긴 RefreshToken이 인증용 AccessToken처럼 사용되는 것을 막을 수 있다.
+     * 이를 통해 인증 필터나 토큰 재발급 API에서 잘못된 토큰 타입이 사용되는 것을 방지할 수 있다.
      */
     public String createAccessToken(Long userId) {
         return createToken(userId, accessTtlSeconds, ACCESS_TOKEN_TYPE);
