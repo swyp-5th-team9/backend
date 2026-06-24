@@ -23,8 +23,8 @@ import java.time.LocalDateTime;
 @Table(
         name = "refresh_tokens",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_refresh_tokens_token",
-                columnNames = "token"
+                name = "uk_refresh_tokens_token_hash",
+                columnNames = "token_hash"
         )
 )
 @Getter
@@ -47,39 +47,17 @@ public class RefreshToken extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "token", nullable = false, length = 1000)
-    private String token;
+    @Column(name = "token_hash", nullable = false, length = 64, columnDefinition = "CHAR(64)")
+    private String tokenHash;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(name = "revoked_at")
-    private LocalDateTime revokedAt;
-
     @Builder
-    private RefreshToken(User user, String token, LocalDateTime expiresAt, LocalDateTime revokedAt) {
+    private RefreshToken(User user, String tokenHash, LocalDateTime expiresAt) {
         this.user = user;
-        this.token = token;
+        this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
-        this.revokedAt = revokedAt;
-    }
-
-    /*
-     * 토큰 row를 삭제하지 않고 폐기 시각을 남긴다.
-     * 운영 환경에서는 폐기 이력을 통해 로그아웃, 토큰 탈취 의심, 회전 정책을 추적할 수 있다.
-     * 현재는 사용자당 RefreshToken 1개를 delete 방식으로 유지하지만,
-     * 추후 다중 기기 세션을 허용하면 특정 기기 토큰만 폐기하는 용도로 사용할 수 있다.
-     */
-    public void revoke() {
-        if (isRevoked()) {
-            return;
-        }
-
-        this.revokedAt = LocalDateTime.now();
-    }
-
-    public boolean isRevoked() {
-        return revokedAt != null;
     }
 
     public boolean isExpired() {
