@@ -2,6 +2,7 @@ package com.swift.sportspub.user.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
 import com.swift.sportspub.user.dto.OnboardingRequest;
+import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,5 +52,14 @@ public class UserController {
     @GetMapping("/me")
     public ApiResponse<UserResponse> getMyInfo(@AuthenticationPrincipal Long userId) {
         return ApiResponse.success(userService.getMyInfo(userId));
+    }
+
+    @PatchMapping("/me")
+    public ApiResponse<Void> updateMyInfo(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdateUserRequest request
+    ) {
+        userService.updateMyInfo(userId, request);
+        return ApiResponse.success();
     }
 }
