@@ -5,7 +5,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
-@Schema(description = "회원 정보 응답")
+@Schema(
+        description = "회원 정보 응답",
+        example = "{\"userId\":1,\"nickname\":\"주양\",\"role\":\"FAN\",\"onboardingCompleted\":true,\"favoriteTeams\":[{\"teamId\":1,\"teamName\":\"LG\"}]}"
+)
 public record UserResponse(
 
         @Schema(description = "회원 ID", example = "1")
@@ -20,7 +23,7 @@ public record UserResponse(
         @Schema(description = "온보딩 완료 여부", example = "true")
         boolean onboardingCompleted,
 
-        @Schema(description = "선호 구단 목록")
+        @Schema(description = "선호 구단 목록", example = "[{\"teamId\":1,\"teamName\":\"LG\"}]")
         List<FavoriteTeamResponse> favoriteTeams
 ) {
 }

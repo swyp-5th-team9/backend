@@ -5,7 +5,10 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@Schema(description = "회원 정보 수정 요청")
+@Schema(
+        description = "회원 정보 수정 요청",
+        example = "{\"nickname\":\"주양2\",\"teamIds\":[1,3,7]}"
+)
 public record UpdateUserRequest(
 
         @Schema(description = "사용자 닉네임. 미전달 시 기존 닉네임을 유지합니다.", example = "주양2")
