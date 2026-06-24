@@ -7,7 +7,7 @@ import java.util.List;
 
 @Schema(
         description = "회원 정보 응답",
-        example = "{\"userId\":1,\"nickname\":\"주양\",\"role\":\"FAN\",\"onboardingCompleted\":true,\"favoriteTeams\":[{\"teamId\":1,\"teamName\":\"LG\"}]}"
+        example = "{\"userId\":1,\"nickname\":\"주양\",\"role\":\"FAN\",\"onboardingCompleted\":true,\"favoriteTeams\":[]}"
 )
 public record UserResponse(
 
@@ -23,7 +23,7 @@ public record UserResponse(
         @Schema(description = "온보딩 완료 여부", example = "true")
         boolean onboardingCompleted,
 
-        @Schema(description = "선호 구단 목록", example = "[{\"teamId\":1,\"teamName\":\"LG\"}]")
+        @Schema(description = "선호 구단 목록. 현재는 UserFavoriteTeam 조회 로직과 Team 도메인 미구현으로 빈 배열을 반환합니다.", example = "[]")
         List<FavoriteTeamResponse> favoriteTeams
 ) {
 }

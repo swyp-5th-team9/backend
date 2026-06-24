@@ -31,7 +31,9 @@ public class UserController {
             description = """
                     인증된 회원의 온보딩을 완료한다.
                     nickname은 필수이며 최대 20자까지 입력할 수 있다.
-                    teamIds는 최대 3개까지 검증만 수행하며, 선호 구단 저장은 #12의 UserFavoriteTeam 연결 시 반영한다.
+                    현재 온보딩에서는 teamIds를 저장하지 않는다.
+                    선호 구단 저장 및 수정은 PATCH /api/v1/users/me 에서 지원한다.
+                    Team 도메인 구현 후 teamIds 존재 여부 검증이 추가될 예정이다.
                     """
     )
     @ApiResponses({
@@ -52,7 +54,11 @@ public class UserController {
 
     @Operation(
             summary = "내 정보 조회",
-            description = "현재 로그인한 사용자의 정보를 조회한다."
+            description = """
+                    현재 로그인한 사용자의 정보를 조회한다.
+                    현재는 UserFavoriteTeam 조회 로직과 Team 도메인이 구현되지 않아 favoriteTeams를 빈 배열로 반환한다.
+                    Team 도메인 구현 후 favoriteTeams에 teamId, teamName 등 구단 정보를 제공할 예정이다.
+                    """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -73,6 +79,7 @@ public class UserController {
                     현재 로그인한 사용자의 회원 정보를 수정한다.
                     닉네임 및 선호 구단 정보를 변경할 수 있다.
                     nickname은 최대 20자까지 입력할 수 있고, teamIds는 최대 3개까지 선택할 수 있다.
+                    현재는 teamId 값 저장만 수행하며, Team 존재 여부 검증은 Team 도메인 구현 후 추가될 예정이다.
                     """
     )
     @ApiResponses({
