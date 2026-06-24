@@ -56,7 +56,7 @@ public class AuthService {
      *
      * 요청으로 들어온 RefreshToken이 JWT로 유효하고, DB에 저장된 토큰과 정확히 일치할 때만
      * 새 AccessToken과 RefreshToken을 발급한다. 재발급 성공 시 기존 RefreshToken은 더 이상
-     * 사용할 수 없도록 제거하고 새 RefreshToken만 저장해 탈취 토큰의 재사용 가능성을 줄인다.
+     * 사용할 수 없도록 삭제하고 새 RefreshToken만 저장해 탈취 토큰의 재사용 가능성을 줄인다.
      */
     @Transactional
     public TokenResponse reissue(String refreshToken) {
@@ -73,7 +73,6 @@ public class AuthService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE);
         }
 
-        storedRefreshToken.revoke();
         return createTokenResponse(storedRefreshToken.getUser());
     }
 

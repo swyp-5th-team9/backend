@@ -67,6 +67,8 @@ public class RefreshToken extends BaseEntity {
     /*
      * 토큰 row를 삭제하지 않고 폐기 시각을 남긴다.
      * 운영 환경에서는 폐기 이력을 통해 로그아웃, 토큰 탈취 의심, 회전 정책을 추적할 수 있다.
+     * 현재는 사용자당 RefreshToken 1개를 delete 방식으로 유지하지만,
+     * 추후 다중 기기 세션을 허용하면 특정 기기 토큰만 폐기하는 용도로 사용할 수 있다.
      */
     public void revoke() {
         if (isRevoked()) {
