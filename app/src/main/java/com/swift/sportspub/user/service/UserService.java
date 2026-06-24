@@ -1,5 +1,6 @@
 package com.swift.sportspub.user.service;
 
+import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.exception.UserNotFoundException;
 import com.swift.sportspub.user.repository.UserRepository;
@@ -21,5 +22,15 @@ public class UserService {
     public User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
+    }
+
+    /*
+     * 현재 Team 도메인이 구현되어 있지 않아 teamIds는 요청 검증만 수행하고 저장하지 않는다.
+     * 선호 구단 저장은 Team/UserFavoriteTeam 구조가 준비된 후 별도 이슈에서 연결한다.
+     */
+    @Transactional
+    public void onboarding(Long userId, OnboardingRequest request) {
+        User user = getUser(userId);
+        user.completeOnboarding(request.nickname());
     }
 }

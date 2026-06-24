@@ -48,9 +48,6 @@ public class User extends BaseEntity {
     @Column(name = "nickname", length = 30)
     private String nickname;
 
-    @Column(name = "favorite_team_id")
-    private Long favoriteTeamId;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
@@ -66,7 +63,6 @@ public class User extends BaseEntity {
             OAuthProvider oauthProvider,
             String oauthId,
             String nickname,
-            Long favoriteTeamId,
             UserRole role,
             boolean onboardingCompleted,
             LocalDateTime deletedAt
@@ -74,7 +70,6 @@ public class User extends BaseEntity {
         this.oauthProvider = oauthProvider;
         this.oauthId = oauthId;
         this.nickname = nickname;
-        this.favoriteTeamId = favoriteTeamId;
         this.role = role != null ? role : UserRole.FAN;
         this.onboardingCompleted = onboardingCompleted;
         this.deletedAt = deletedAt;
@@ -89,18 +84,14 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    public void completeOnboarding(String nickname, Long favoriteTeamId) {
+    public void completeOnboarding(String nickname) {
         this.nickname = nickname;
-        this.favoriteTeamId = favoriteTeamId;
         this.onboardingCompleted = true;
     }
 
-    public void updateProfile(String nickname, Long favoriteTeamId) {
+    public void updateProfile(String nickname) {
         if (nickname != null) {
             this.nickname = nickname;
-        }
-        if (favoriteTeamId != null) {
-            this.favoriteTeamId = favoriteTeamId;
         }
     }
 
