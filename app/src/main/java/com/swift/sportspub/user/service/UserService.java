@@ -25,8 +25,8 @@ public class UserService {
     }
 
     /*
-     * 현재 Team 도메인이 구현되어 있지 않아 teamIds는 요청 검증만 수행하고 저장하지 않는다.
-     * 선호 구단 저장은 Team/UserFavoriteTeam 구조가 준비된 후 별도 이슈에서 연결한다.
+     * teamIds는 현재 최대 개수 검증만 수행한다.
+     * 선호 구단 저장은 #12에서 Team/UserFavoriteTeam 구조를 만들 때 함께 연결한다.
      */
     @Transactional
     public void onboarding(Long userId, OnboardingRequest request) {

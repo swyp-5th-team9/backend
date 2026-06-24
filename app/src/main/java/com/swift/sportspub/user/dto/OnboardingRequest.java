@@ -14,7 +14,7 @@ public record OnboardingRequest(
         @Size(max = 20, message = "nickname은 최대 20자까지 입력할 수 있습니다.")
         String nickname,
 
-        @Schema(description = "선호 구단 ID 목록. 현재는 저장하지 않고 최대 개수만 검증합니다.", example = "[1, 3, 7]")
+        @Schema(description = "선호 구단 ID 목록. 현재는 최대 개수만 검증하며 #12에서 UserFavoriteTeam 저장을 연결합니다.", example = "[1, 3, 7]")
         @Size(max = 3, message = "teamIds는 최대 3개까지 선택할 수 있습니다.")
         List<Long> teamIds
 ) {

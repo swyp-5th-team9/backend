@@ -26,7 +26,7 @@ public class UserController {
             description = """
                     인증된 회원의 온보딩을 완료한다.
                     nickname은 필수이며 최대 20자까지 입력할 수 있다.
-                    teamIds는 최대 3개까지 받을 수 있지만, 현재 Team 도메인이 없어 저장하지 않는다.
+                    teamIds는 최대 3개까지 검증만 수행하며, 선호 구단 저장은 #12의 UserFavoriteTeam 연결 시 반영한다.
                     """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponses({

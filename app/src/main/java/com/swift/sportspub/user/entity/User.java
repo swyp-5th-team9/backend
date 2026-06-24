@@ -45,7 +45,7 @@ public class User extends BaseEntity {
     @Column(name = "oauth_id", nullable = false, length = 100)
     private String oauthId;
 
-    @Column(name = "nickname", length = 30)
+    @Column(name = "nickname", length = 20)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
