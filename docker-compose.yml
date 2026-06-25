@@ -1,15 +1,40 @@
+# 로컬 개발용 PostgreSQL 16 (운영은 AWS RDS 별도)
+# 사용: docker-compose up -d db
+# 접속: psql -h localhost -p 5432 -U sportspub -d sportspub_db
+#
+# 스키마(15테이블)는 Flyway 마이그레이션으로 관리 — Issue #15
+# 본 컨테이너는 빈 DB만 제공, DDL은 Spring Boot 기동 시 Flyway가 적용
+
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: sportspub-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: sportspub_db
       POSTGRES_USER: sportspub
-      POSTGRES_PASSWORD: sportspub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sportspub}   # 운영은 .env로 override
+      TZ: Asia/Seoul                                       # 컨테이너 TZ (애플리케이션 로그용)
+      PGTZ: Asia/Seoul                                     # Postgres 세션 TZ (KST 일관)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"   # UTF-8 + 정렬 일관성
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sportspub -d sportspub_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sportspub-net
 
 volumes:
   pgdata:
+    name: sportspub-pgdata
+
+networks:
+  sportspub-net:
+    name: sportspub-net
+    driver: bridge
