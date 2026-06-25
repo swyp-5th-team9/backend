@@ -8,10 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserFavoriteTeamRepository extends JpaRepository<UserFavoriteTeam, Long> {
 
-    @Modifying(
-            clearAutomatically = true,
-            flushAutomatically = true
-    )
+    @Modifying(flushAutomatically = true)
     @Query("delete from UserFavoriteTeam uft where uft.user.userId = :userId")
     void deleteByUserId(@Param("userId") Long userId);
 }
