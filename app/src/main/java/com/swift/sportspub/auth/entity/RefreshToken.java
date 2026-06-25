@@ -23,8 +23,8 @@ import java.time.LocalDateTime;
 @Table(
         name = "refresh_tokens",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_refresh_tokens_token_hash",
-                columnNames = "token_hash"
+                name = "uk_refresh_tokens_user",
+                columnNames = "user_id"
         )
 )
 @Getter
