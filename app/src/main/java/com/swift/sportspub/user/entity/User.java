@@ -15,7 +15,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -27,7 +26,6 @@ import java.time.LocalDateTime;
                 columnNames = {"oauth_provider", "oauth_id"}
         )
 )
-@SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(of = "userId", callSuper = false)
@@ -101,6 +99,16 @@ public class User extends BaseEntity {
 
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
+    }
+
+    /*
+     * 탈퇴 회원이 동일 OAuth 계정으로 재로그인할 때 계정을 복구한다.
+     * MVP 정책: 신규 row를 만들지 않고 deletedAt을 null로 되돌린 뒤 온보딩 정보를 초기화한다.
+     */
+    public void restoreForReLogin() {
+        this.deletedAt = null;
+        this.nickname = null;
+        this.onboardingCompleted = false;
     }
 
     public boolean isDeleted() {

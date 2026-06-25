@@ -28,11 +28,11 @@ public class UserService {
 
     /*
      * 현재 JWT 인증 구조는 SecurityContext principal에 Long userId를 저장한다.
-     * 후속 User API(#11~#13)는 이 메서드를 통해 인증된 사용자를 일관되게 조회한다.
+     * 인증된 API는 탈퇴하지 않은 활성 회원만 조회한다.
      */
     @Transactional(readOnly = true)
     public User getUser(Long userId) {
-        return userRepository.findById(userId)
+        return userRepository.findActiveById(userId)
                 .orElseThrow(UserNotFoundException::new);
     }
 

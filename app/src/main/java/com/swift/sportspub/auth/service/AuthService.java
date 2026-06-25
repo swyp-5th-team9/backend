@@ -13,6 +13,7 @@ import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.user.entity.OAuthProvider;
 import com.swift.sportspub.user.entity.User;
+import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +35,7 @@ public class AuthService {
     private final KakaoClient kakaoClient;
     private final NaverClient naverClient;
     private final UserRepository userRepository;
+    private final UserFavoriteTeamRepository userFavoriteTeamRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
 
@@ -77,7 +79,10 @@ public class AuthService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE);
         }
 
-        return createTokenResponse(storedRefreshToken.getUser());
+        User user = userRepository.findActiveById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE));
+
+        return createTokenResponse(user);
     }
 
     /*
@@ -107,9 +112,24 @@ public class AuthService {
      * "어떤 provider의 oauthId인가"만 다루고, 향후 Google/Apple 로그인 추가 시
      * 새 Client와 provider 분기만 추가하면 되어 수정 범위를 줄일 수 있다.
      */
+    /*
+     * OAuth 로그인은 탈퇴 회원을 포함해 조회한다.
+     * 탈퇴 회원이 재로그인하면 기존 row를 복구하고, 없으면 신규 생성한다.
+     */
     private User findOrCreateUser(OAuthProvider oauthProvider, String oauthId) {
-        return userRepository.findByOauthProviderAndOauthId(oauthProvider, oauthId)
+        return userRepository.findByOauthProviderAndOauthIdIncludingDeleted(oauthProvider, oauthId)
+                .map(user -> {
+                    if (user.isDeleted()) {
+                        restoreWithdrawnUser(user);
+                    }
+                    return user;
+                })
                 .orElseGet(() -> createUser(oauthProvider, oauthId));
+    }
+
+    private void restoreWithdrawnUser(User user) {
+        user.restoreForReLogin();
+        userFavoriteTeamRepository.deleteByUserId(user.getUserId());
     }
 
     /*
