@@ -3,7 +3,9 @@ package com.swift.sportspub.user.service;
 import com.swift.sportspub.auth.repository.RefreshTokenRepository;
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
+import com.swift.sportspub.team.entity.Team;
 import com.swift.sportspub.team.repository.TeamRepository;
+import com.swift.sportspub.user.dto.FavoriteTeamResponse;
 import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
@@ -22,7 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -125,18 +130,37 @@ public class UserService {
     }
 
     private UserResponse toUserResponse(User user) {
-        /*
-         * TODO:
-         * Team 도메인 구현 후 UserFavoriteTeam 조회 추가
-         * favoriteTeams 응답에 teamId 및 teamName 포함
-         * 현재는 Team 정보 조회 기능이 없어 빈 배열 반환
-         */
+        List<UserFavoriteTeam> favoriteTeams =
+                userFavoriteTeamRepository.findByUserUserIdOrderByCreatedAtAsc(user.getUserId());
+
+        List<FavoriteTeamResponse> favoriteTeamResponses = buildFavoriteTeamResponses(favoriteTeams);
+
         return new UserResponse(
                 user.getUserId(),
                 user.getNickname(),
                 user.getRole(),
                 user.isOnboardingCompleted(),
-                List.of()
+                favoriteTeamResponses
         );
+    }
+
+    private List<FavoriteTeamResponse> buildFavoriteTeamResponses(List<UserFavoriteTeam> favoriteTeams) {
+        if (favoriteTeams.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> teamIds = favoriteTeams.stream()
+                .map(UserFavoriteTeam::getTeamId)
+                .toList();
+
+        Map<Long, Team> teamById = teamRepository.findAllById(teamIds).stream()
+                .collect(Collectors.toMap(Team::getTeamId, Function.identity()));
+
+        return favoriteTeams.stream()
+                .map(favoriteTeam -> {
+                    Team team = teamById.get(favoriteTeam.getTeamId());
+                    return new FavoriteTeamResponse(favoriteTeam.getTeamId(), team.getShortName());
+                })
+                .toList();
     }
 }
