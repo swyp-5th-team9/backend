@@ -58,15 +58,11 @@ public class UserService {
         replaceFavoriteTeams(user, request.teamIds());
     }
 
-    /*
-     * 현재 온보딩에서는 teamIds를 저장하지 않고 최대 개수 검증만 수행한다.
-     * 선호 구단 저장 및 수정은 PATCH /api/v1/users/me 에서 수행한다.
-     * TODO: Team 도메인 구현 후 온보딩 저장 정책 재검토
-     */
     @Transactional
     public void onboarding(Long userId, OnboardingRequest request) {
         User user = getUser(userId);
         user.completeOnboarding(request.nickname());
+        replaceFavoriteTeams(user, request.teamIds());
     }
 
     /*
