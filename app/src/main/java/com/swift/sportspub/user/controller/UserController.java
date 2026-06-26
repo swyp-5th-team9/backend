@@ -32,15 +32,15 @@ public class UserController {
             summary = "회원 온보딩",
             description = """
                     인증된 회원의 온보딩을 완료한다.
-                    nickname은 필수이며 최대 20자까지 입력할 수 있다.
-                    현재 온보딩에서는 teamIds를 저장하지 않는다.
-                    선호 구단 저장 및 수정은 PATCH /api/v1/users/me 에서 지원한다.
-                    Team 도메인 구현 후 teamIds 존재 여부 검증이 추가될 예정이다.
+                    nickname은 필수이며 2~20자까지 입력할 수 있다.
+                    teamIds를 전달하면 선호 구단으로 저장하며, 최대 3개까지 선택할 수 있다.
+                    teamIds를 생략하거나 빈 배열([])을 전달하면 선호 구단 없이 온보딩을 완료한다.
+                    존재하지 않는 teamId는 400으로 반환한다.
                     """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "온보딩 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "400", description = "입력값 오류 또는 존재하지 않는 teamId"),
             @ApiResponse(responseCode = "401", description = "인증 필요"),
             @ApiResponse(responseCode = "404", description = "사용자 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
@@ -58,8 +58,7 @@ public class UserController {
             summary = "내 정보 조회",
             description = """
                     현재 로그인한 사용자의 정보를 조회한다.
-                    현재는 UserFavoriteTeam 조회 로직과 Team 도메인이 구현되지 않아 favoriteTeams를 빈 배열로 반환한다.
-                    Team 도메인 구현 후 favoriteTeams에 teamId, teamName 등 구단 정보를 제공할 예정이다.
+                    favoriteTeams에는 저장된 선호 구단의 teamId와 teamName(구단 약칭)이 포함된다.
                     """
     )
     @ApiResponses({
@@ -80,13 +79,16 @@ public class UserController {
             description = """
                     현재 로그인한 사용자의 회원 정보를 수정한다.
                     닉네임 및 선호 구단 정보를 변경할 수 있다.
-                    nickname은 최대 20자까지 입력할 수 있고, teamIds는 최대 3개까지 선택할 수 있다.
-                    현재는 teamId 값 저장만 수행하며, Team 존재 여부 검증은 Team 도메인 구현 후 추가될 예정이다.
+                    nickname은 2~20자까지 입력할 수 있고, teamIds는 최대 3개까지 선택할 수 있다.
+                    teamIds를 전달하면 기존 선호 구단을 새 목록으로 교체하며, 빈 배열([]) 전달 시 전체 해제한다.
+                    nickname만 전달하면 선호 구단은 변경되지 않는다.
+                    teamIds에 중복 ID가 포함되면 중복을 제거한 뒤 저장한다.
+                    존재하지 않는 teamId는 400으로 반환한다.
                     """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공"),
-            @ApiResponse(responseCode = "400", description = "입력값 오류"),
+            @ApiResponse(responseCode = "400", description = "입력값 오류 또는 존재하지 않는 teamId"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
