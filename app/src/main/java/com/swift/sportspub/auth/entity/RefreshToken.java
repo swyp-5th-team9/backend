@@ -23,8 +23,8 @@ import java.time.LocalDateTime;
 @Table(
         name = "refresh_tokens",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_refresh_tokens_token_hash",
-                columnNames = "token_hash"
+                name = "uk_refresh_tokens_user",
+                columnNames = "user_id"
         )
 )
 @Getter
@@ -47,7 +47,7 @@ public class RefreshToken extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "token_hash", nullable = false, length = 64, columnDefinition = "CHAR(64)")
+    @Column(name = "token_hash", nullable = false, length = 64)
     private String tokenHash;
 
     @Column(name = "expires_at", nullable = false)
