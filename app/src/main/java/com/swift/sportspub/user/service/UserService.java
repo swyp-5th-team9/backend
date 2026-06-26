@@ -3,6 +3,7 @@ package com.swift.sportspub.user.service;
 import com.swift.sportspub.auth.repository.RefreshTokenRepository;
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
+import com.swift.sportspub.team.repository.TeamRepository;
 import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
@@ -29,6 +30,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserFavoriteTeamRepository userFavoriteTeamRepository;
+    private final TeamRepository teamRepository;
     private final WithdrawalReasonRepository withdrawalReasonRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -104,11 +106,8 @@ public class UserService {
         }
 
         List<Long> distinctTeamIds = new ArrayList<>(new LinkedHashSet<>(teamIds));
-        /*
-         * 현재는 Team 도메인이 없어 teamId 값만 저장한다.
-         * TODO: Team 도메인 구현 후 teamIds 존재 여부 검증 추가
-         * 검증은 기존 선호 구단 삭제 전에 수행해야 한다.
-         */
+        validateTeamIdsExist(distinctTeamIds);
+
         List<UserFavoriteTeam> favoriteTeams = distinctTeamIds.stream()
                 .map(teamId -> UserFavoriteTeam.builder()
                         .user(user)
@@ -118,6 +117,15 @@ public class UserService {
 
         userFavoriteTeamRepository.deleteByUserId(user.getUserId());
         userFavoriteTeamRepository.saveAll(favoriteTeams);
+    }
+
+    private void validateTeamIdsExist(List<Long> teamIds) {
+        if (teamIds.isEmpty()) {
+            return;
+        }
+        if (teamRepository.findAllById(teamIds).size() != teamIds.size()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 teamId가 포함되어 있습니다.");
+        }
     }
 
     private UserResponse toUserResponse(User user) {
