@@ -6,7 +6,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface UserFavoriteTeamRepository extends JpaRepository<UserFavoriteTeam, Long> {
+
+    List<UserFavoriteTeam> findByUserUserIdOrderByCreatedAtAsc(Long userId);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from UserFavoriteTeam uft where uft.user.userId = :userId")
