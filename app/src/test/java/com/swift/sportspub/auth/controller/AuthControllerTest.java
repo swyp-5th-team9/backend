@@ -2,7 +2,6 @@ package com.swift.sportspub.auth.controller;
 
 import com.swift.sportspub.auth.dto.LoginResponse;
 import com.swift.sportspub.auth.service.AuthService;
-import com.swift.sportspub.common.exception.GlobalExceptionHandler;
 import com.swift.sportspub.user.entity.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,9 +34,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(authController)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
     }
 
     @Test
@@ -46,7 +43,7 @@ class AuthControllerTest {
         when(authService.loginWithKakao(eq("kakao-token"))).thenReturn(loginResponse);
 
         mockMvc.perform(post("/api/v1/auth/login/kakao")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer kakao-token")
+                        .header(HttpHeaders.AUTHORIZATION, "kakao-token")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -61,22 +58,12 @@ class AuthControllerTest {
         when(authService.loginWithNaver(eq("naver-token"))).thenReturn(loginResponse);
 
         mockMvc.perform(post("/api/v1/auth/login/naver")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer naver-token")
+                        .header(HttpHeaders.AUTHORIZATION, "naver-token")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.onboardingCompleted").value(true));
 
         verify(authService).loginWithNaver("naver-token");
-    }
-
-    @Test
-    void loginWithKakao_withBlankBearerToken_returnsBadRequest() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login/kakao")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer ")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("accessToken은 필수입니다."));
     }
 }

@@ -1,6 +1,5 @@
 package com.swift.sportspub.auth.controller;
 
-import com.swift.sportspub.auth.BearerTokenExtractor;
 import com.swift.sportspub.auth.dto.LoginResponse;
 import com.swift.sportspub.auth.dto.TokenReissueRequest;
 import com.swift.sportspub.auth.dto.TokenResponse;
@@ -38,7 +37,7 @@ public class AuthController {
             summary = "카카오 로그인",
             description = """
                     앱에서 카카오 SDK 로그인을 완료한 뒤 발급받은 Access Token을 Authorization 헤더로 전달한다.
-                    형식: `Authorization: Bearer {카카오_access_token}`
+                    Bearer 접두사 없이 토큰 값만 전달한다.
                     백엔드는 카카오 사용자 정보를 조회하고 회원 여부를 확인한 후 JWT를 발급한다.
                     최초 로그인 사용자는 자동 회원 생성 후 온보딩 여부를 반환한다.
                     """
@@ -53,14 +52,14 @@ public class AuthController {
     public ApiResponse<LoginResponse> loginWithKakao(
             @Parameter(
                     name = "Authorization",
-                    description = "카카오 SDK Access Token (Bearer {token})",
+                    description = "카카오 SDK Access Token",
                     required = true,
                     in = ParameterIn.HEADER,
-                    example = "Bearer kakao_access_token"
+                    example = "kakao_access_token"
             )
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String accessToken
     ) {
-        return ApiResponse.success(authService.loginWithKakao(BearerTokenExtractor.extractAccessToken(authorization)));
+        return ApiResponse.success(authService.loginWithKakao(accessToken));
     }
 
     /*
@@ -71,7 +70,7 @@ public class AuthController {
             summary = "네이버 로그인",
             description = """
                     앱에서 네이버 SDK 로그인을 완료한 뒤 발급받은 Access Token을 Authorization 헤더로 전달한다.
-                    형식: `Authorization: Bearer {네이버_access_token}`
+                    Bearer 접두사 없이 토큰 값만 전달한다.
                     백엔드는 네이버 사용자 정보를 조회하고 회원 여부를 확인한 후 JWT를 발급한다.
                     최초 로그인 사용자는 자동 회원 생성 후 온보딩 여부를 반환한다.
                     """
@@ -86,14 +85,14 @@ public class AuthController {
     public ApiResponse<LoginResponse> loginWithNaver(
             @Parameter(
                     name = "Authorization",
-                    description = "네이버 SDK Access Token (Bearer {token})",
+                    description = "네이버 SDK Access Token",
                     required = true,
                     in = ParameterIn.HEADER,
-                    example = "Bearer naver_access_token"
+                    example = "naver_access_token"
             )
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String accessToken
     ) {
-        return ApiResponse.success(authService.loginWithNaver(BearerTokenExtractor.extractAccessToken(authorization)));
+        return ApiResponse.success(authService.loginWithNaver(accessToken));
     }
 
     /*
