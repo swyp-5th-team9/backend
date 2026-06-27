@@ -11,11 +11,11 @@ import java.util.List;
 )
 public record UpdateUserRequest(
 
-        @Schema(description = "사용자 닉네임. 미전달 시 기존 닉네임을 유지합니다.", example = "주양2")
-        @Size(max = 20, message = "nickname은 최대 20자까지 입력할 수 있습니다.")
+        @Schema(description = "사용자 닉네임 (2~20자). 미전달 시 기존 닉네임을 유지합니다.", example = "주양2")
+        @Size(min = 2, max = 20, message = "nickname은 2~20자까지 입력할 수 있습니다.")
         String nickname,
 
-        @Schema(description = "선호 구단 ID 목록. 미전달 시 유지, 빈 배열 전달 시 전체 해제합니다. 현재는 teamId 값만 저장하며 존재 여부 검증은 추후 추가됩니다.", example = "[1, 3, 7]")
+        @Schema(description = "선호 구단 ID 목록. 미전달 시 유지, 빈 배열 전달 시 전체 해제. 최대 3개, 존재하지 않는 ID는 400.", example = "[1, 3, 7]")
         @Size(max = 3, message = "teamIds는 최대 3개까지 선택할 수 있습니다.")
         List<Long> teamIds
 ) {
