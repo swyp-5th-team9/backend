@@ -11,7 +11,7 @@ public record FavoriteTeamResponse(
         @Schema(description = "구단 ID", example = "1")
         Long teamId,
 
-        @Schema(description = "구단명", example = "LG")
+        @Schema(description = "구단 약칭 (Team.shortName)", example = "LG")
         String teamName
 ) {
 }
