@@ -40,7 +40,7 @@ public class Favorite extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: Pub 도메인 머지 후 @ManyToOne Pub 연관관계 전환 예정
+    // TODO: @ManyToOne Pub 연관관계 전환 검토 (전환 시 N+1 방지 fetch join 함께 검토)
     @Column(name = "pub_id", nullable = false)
     private Long pubId;
 
