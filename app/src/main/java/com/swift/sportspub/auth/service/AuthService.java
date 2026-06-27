@@ -119,6 +119,10 @@ public class AuthService {
     private User findOrCreateUser(OAuthProvider oauthProvider, String oauthId) {
         return userRepository.findByOauthProviderAndOauthIdIncludingDeleted(oauthProvider, oauthId)
                 .map(user -> {
+                    /*
+                     * MVP 복구 정책: 신규 row를 만들지 않고 기존 계정을 되살린다.
+                     * 닉네임·온보딩·선호 구단을 초기화해 재온보딩 흐름으로 보낸다. (user/README.md)
+                     */
                     if (user.isDeleted()) {
                         restoreWithdrawnUser(user);
                     }
@@ -127,6 +131,10 @@ public class AuthService {
                 .orElseGet(() -> createUser(oauthProvider, oauthId));
     }
 
+    /*
+     * restoreForReLogin(): deletedAt 해제, nickname null, onboardingCompleted false
+     * 선호 구단은 별도 삭제 — 탈퇴 전 프로필을 그대로 두지 않는다.
+     */
     private void restoreWithdrawnUser(User user) {
         user.restoreForReLogin();
         userFavoriteTeamRepository.deleteByUserId(user.getUserId());
