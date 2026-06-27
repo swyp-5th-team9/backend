@@ -14,3 +14,20 @@ dependencies {
 
     runtimeOnly 'org.postgresql:postgresql'
 }
+
+tasks.register('smokeFetch', JavaExec) {
+    group = 'verification'
+    description = 'Run KboPlaywrightProvider standalone and print games (no DB).'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.swift.sportspub.crawler.SmokeFetch'
+    def ym = project.findProperty('ym') ?: ''
+    args = ym.toString().split(' ').findAll { it }
+}
+
+tasks.register('playwrightInstall', JavaExec) {
+    group = 'verification'
+    description = 'Install Playwright Chromium browser (최초 1회).'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args = ['install', 'chromium']
+}
