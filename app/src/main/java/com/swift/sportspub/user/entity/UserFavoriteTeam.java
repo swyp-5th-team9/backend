@@ -42,7 +42,7 @@ public class UserFavoriteTeam {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: Team 도메인 구현 후 teamId 존재 여부 검증 및 Team 연관관계 전환 검토
+    // TODO: @ManyToOne Team 연관관계 전환 검토 (전환 시 N+1 방지 fetch join 함께 검토)
     @Column(name = "team_id", nullable = false)
     private Long teamId;
 

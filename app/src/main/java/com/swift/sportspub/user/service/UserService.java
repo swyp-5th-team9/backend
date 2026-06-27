@@ -3,6 +3,9 @@ package com.swift.sportspub.user.service;
 import com.swift.sportspub.auth.repository.RefreshTokenRepository;
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
+import com.swift.sportspub.team.entity.Team;
+import com.swift.sportspub.team.repository.TeamRepository;
+import com.swift.sportspub.user.dto.FavoriteTeamResponse;
 import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
@@ -21,7 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +35,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserFavoriteTeamRepository userFavoriteTeamRepository;
+    private final TeamRepository teamRepository;
     private final WithdrawalReasonRepository withdrawalReasonRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -56,15 +63,11 @@ public class UserService {
         replaceFavoriteTeams(user, request.teamIds());
     }
 
-    /*
-     * 현재 온보딩에서는 teamIds를 저장하지 않고 최대 개수 검증만 수행한다.
-     * 선호 구단 저장 및 수정은 PATCH /api/v1/users/me 에서 수행한다.
-     * TODO: Team 도메인 구현 후 온보딩 저장 정책 재검토
-     */
     @Transactional
     public void onboarding(Long userId, OnboardingRequest request) {
         User user = getUser(userId);
         user.completeOnboarding(request.nickname());
+        replaceFavoriteTeams(user, request.teamIds());
     }
 
     /*
@@ -104,11 +107,8 @@ public class UserService {
         }
 
         List<Long> distinctTeamIds = new ArrayList<>(new LinkedHashSet<>(teamIds));
-        /*
-         * 현재는 Team 도메인이 없어 teamId 값만 저장한다.
-         * TODO: Team 도메인 구현 후 teamIds 존재 여부 검증 추가
-         * 검증은 기존 선호 구단 삭제 전에 수행해야 한다.
-         */
+        validateTeamIdsExist(distinctTeamIds);
+
         List<UserFavoriteTeam> favoriteTeams = distinctTeamIds.stream()
                 .map(teamId -> UserFavoriteTeam.builder()
                         .user(user)
@@ -120,19 +120,47 @@ public class UserService {
         userFavoriteTeamRepository.saveAll(favoriteTeams);
     }
 
+    private void validateTeamIdsExist(List<Long> teamIds) {
+        if (teamIds.isEmpty()) {
+            return;
+        }
+        if (teamRepository.findAllById(teamIds).size() != teamIds.size()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 teamId가 포함되어 있습니다.");
+        }
+    }
+
     private UserResponse toUserResponse(User user) {
-        /*
-         * TODO:
-         * Team 도메인 구현 후 UserFavoriteTeam 조회 추가
-         * favoriteTeams 응답에 teamId 및 teamName 포함
-         * 현재는 Team 정보 조회 기능이 없어 빈 배열 반환
-         */
+        List<UserFavoriteTeam> favoriteTeams =
+                userFavoriteTeamRepository.findByUserUserIdOrderByCreatedAtAsc(user.getUserId());
+
+        List<FavoriteTeamResponse> favoriteTeamResponses = buildFavoriteTeamResponses(favoriteTeams);
+
         return new UserResponse(
                 user.getUserId(),
                 user.getNickname(),
                 user.getRole(),
                 user.isOnboardingCompleted(),
-                List.of()
+                favoriteTeamResponses
         );
+    }
+
+    private List<FavoriteTeamResponse> buildFavoriteTeamResponses(List<UserFavoriteTeam> favoriteTeams) {
+        if (favoriteTeams.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> teamIds = favoriteTeams.stream()
+                .map(UserFavoriteTeam::getTeamId)
+                .toList();
+
+        Map<Long, Team> teamById = teamRepository.findAllById(teamIds).stream()
+                .collect(Collectors.toMap(Team::getTeamId, Function.identity()));
+
+        return favoriteTeams.stream()
+                .map(favoriteTeam -> {
+                    Team team = teamById.get(favoriteTeam.getTeamId());
+                    return new FavoriteTeamResponse(favoriteTeam.getTeamId(), team.getShortName());
+                })
+                .toList();
     }
 }
