@@ -1,19 +1,19 @@
 package com.swift.sportspub.favorite.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.DocResponse;
+import com.swift.sportspub.common.swagger.DocResponses;
+import com.swift.sportspub.favorite.dto.FavoriteListResponse;
 import com.swift.sportspub.favorite.service.FavoriteService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Favorite", description = "펍 즐겨찾기 API")
+@Tag(name = "Favorite", description = "즐겨찾기 API")
 @RestController
 @RequestMapping("/api/v1/favorites")
 @RequiredArgsConstructor
@@ -22,41 +22,21 @@ public class FavoriteController {
     private final FavoriteService favoriteService;
 
     @Operation(
-            summary = "펍 즐겨찾기 추가",
+            summary = "즐겨찾기 목록 조회",
             description = """
-                    현재 로그인한 사용자의 펍 즐겨찾기를 등록한다.
-                    존재하지 않거나 삭제된 pubId는 400으로 반환한다.
-                    이미 즐겨찾기한 pub은 409로 반환한다.
-                    사용자당 최대 30개까지 등록할 수 있다.
+                    현재 로그인한 사용자의 즐겨찾기 목록을 조회한다.
+                    createdAt 내림차순으로 정렬하며 최대 30개까지 반환한다.
+                    즐겨찾기가 없으면 빈 배열을 반환한다.
+                    pubName, thumbnailImageUrl은 Pub 도메인 연동 후 제공된다.
                     """
     )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200", description = "즐겨찾기 등록 성공"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400", description = "존재하지 않는 pubId 또는 즐겨찾기 30개 초과"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "401", description = "인증 필요"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404", description = "사용자 없음"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409", description = "이미 즐겨찾기한 pub"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "500", description = "서버 오류"
-            )
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "조회 성공"),
+            @DocResponse(responseCode = "401", description = "인증 필요"),
+            @DocResponse(responseCode = "500", description = "서버 오류")
     })
-    @PostMapping("/{pubId}")
-    public ApiResponse<Void> addFavorite(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(description = "즐겨찾기할 펍 ID", example = "1")
-            @PathVariable Long pubId
-    ) {
-        favoriteService.addFavorite(userId, pubId);
-        return ApiResponse.success();
+    @GetMapping
+    public ApiResponse<FavoriteListResponse> getMyFavorites(@AuthenticationPrincipal Long userId) {
+        return ApiResponse.success(favoriteService.getMyFavorites(userId));
     }
 }
