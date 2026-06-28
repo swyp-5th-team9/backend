@@ -61,8 +61,8 @@ public class AuthService {
      * RefreshToken 재발급은 Rotation 방식으로 처리한다.
      *
      * 요청으로 들어온 RefreshToken이 JWT로 유효하고, DB에 저장된 토큰 해시와 일치할 때만
-     * 새 AccessToken과 RefreshToken을 발급한다. 재발급 성공 시 기존 RefreshToken은 더 이상
-     * 사용할 수 없도록 삭제하고 새 RefreshToken만 저장해 탈취 토큰의 재사용 가능성을 줄인다.
+     * 새 AccessToken과 RefreshToken을 발급한다. 재발급 성공 시 기존 RefreshToken row의
+     * token_hash를 갱신(UPDATE)해 이전 refreshToken은 더 이상 사용할 수 없게 한다.
      */
     @Transactional
     public TokenResponse reissue(String refreshToken) {
@@ -82,7 +82,7 @@ public class AuthService {
         User user = userRepository.findActiveById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED, INVALID_REFRESH_TOKEN_MESSAGE));
 
-        return createTokenResponse(user);
+        return createTokenResponse(user, storedRefreshToken);
     }
 
     /*
@@ -170,28 +170,50 @@ public class AuthService {
     }
 
     private TokenResponse createTokenResponse(User user) {
+        return createTokenResponse(user, null);
+    }
+
+    private TokenResponse createTokenResponse(User user, RefreshToken existingRefreshToken) {
         String accessToken = jwtProvider.createAccessToken(user.getUserId());
         String refreshToken = jwtProvider.createRefreshToken(user.getUserId());
 
-        replaceRefreshToken(user, refreshToken);
+        replaceRefreshToken(user, refreshToken, existingRefreshToken);
 
         return new TokenResponse(accessToken, refreshToken);
     }
 
     /*
-     * 현재 정책은 사용자당 RefreshToken 1개 유지다.
+     * 사용자당 RefreshToken row는 uk_refresh_tokens_user 로 1개만 허용된다.
      *
-     * 로그인 또는 재발급 시 기존 토큰을 남겨두면 여러 RefreshToken이 동시에 유효해져
-     * 로그아웃, 탈취 대응, 토큰 회전 정책이 복잡해진다. 따라서 기존 토큰을 삭제하고
-     * 새 토큰만 저장해 서버가 인정하는 RefreshToken을 하나로 제한한다.
+     * delete + insert 방식은 reissue 시 DELETE SQL 없이 INSERT만 실행되어
+     * 동일 user_id에 duplicate key(uk_refresh_tokens_user)가 발생했다.
+     * 기존 row가 있으면 rotate()로 필드를 변경하고, 트랜잭션 커밋 시 JPA Dirty Checking이
+     * UPDATE SQL을 생성한다(명시적 save 없이도 영속 상태 엔티티 변경이 반영됨).
+     * INSERT는 최초 생성 시에만 수행한다.
+     * reissue()에서 이미 조회한 existingRefreshToken을 넘기면 user_id 기준 재조회를 생략한다.
      */
-    private void replaceRefreshToken(User user, String refreshToken) {
-        refreshTokenRepository.deleteByUserUserId(user.getUserId());
-        refreshTokenRepository.save(RefreshToken.builder()
-                .user(user)
-                .tokenHash(hashRefreshToken(refreshToken))
-                .expiresAt(LocalDateTime.now().plusSeconds(refreshTtlSeconds))
-                .build());
+    private void replaceRefreshToken(User user, String refreshToken, RefreshToken existingRefreshToken) {
+        String tokenHash = hashRefreshToken(refreshToken);
+        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(refreshTtlSeconds);
+
+        if (existingRefreshToken != null) {
+            /*
+             * reissue()에서 findByTokenHash로 조회한 영속 엔티티이므로 rotate() 후
+             * 트랜잭션 커밋 시 Dirty Checking으로 UPDATE가 실행된다.
+             */
+            existingRefreshToken.rotate(tokenHash, expiresAt);
+            return;
+        }
+
+        refreshTokenRepository.findByUserUserId(user.getUserId())
+                .ifPresentOrElse(
+                        stored -> stored.rotate(tokenHash, expiresAt),
+                        () -> refreshTokenRepository.save(RefreshToken.builder()
+                                .user(user)
+                                .tokenHash(tokenHash)
+                                .expiresAt(expiresAt)
+                                .build())
+                );
     }
 
     /*
