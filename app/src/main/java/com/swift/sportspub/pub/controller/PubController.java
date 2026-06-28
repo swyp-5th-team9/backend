@@ -5,6 +5,7 @@ import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.common.response.ApiResponse;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
+import com.swift.sportspub.pub.dto.BusinessDayFilter;
 import com.swift.sportspub.pub.dto.PubDetailResponse;
 import com.swift.sportspub.pub.dto.PubListResponse;
 import com.swift.sportspub.pub.dto.PubListSearchCondition;
@@ -57,8 +58,11 @@ public class PubController {
             @Parameter(description = "이름/주소 ILIKE 검색", example = "치어스")
             @RequestParam(required = false) String keyword,
 
-            @Parameter(description = "상영 구단 ID", example = "1")
+            @Parameter(description = "상영 구단 ID (단일, 호환용)", example = "1")
             @RequestParam(required = false) Long teamId,
+
+            @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
+            @RequestParam(required = false) List<Long> teamIds,
 
             @Parameter(description = "지역 — 자치구 코드 또는 광역 코드", example = "GANGNAM")
             @RequestParam(required = false) String region,
@@ -78,6 +82,12 @@ public class PubController {
             @Parameter(description = "수용 규모", example = "R_50_100")
             @RequestParam(required = false) CapacityRange capacityRange,
 
+            @Parameter(description = "지금 영업중인 펍만 (true)")
+            @RequestParam(required = false) Boolean openNow,
+
+            @Parameter(description = "영업요일 — EVERYDAY/WEEKDAY/WEEKEND/MON..SUN (선택 요일 전부 영업)")
+            @RequestParam(required = false) BusinessDayFilter businessDay,
+
             @Parameter(description = "페이지 (0부터)", example = "0")
             @RequestParam(required = false, defaultValue = "0") int page,
 
@@ -88,13 +98,24 @@ public class PubController {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         List<Region> regions = RegionResolver.resolve(region);
+        List<Long> mergedTeamIds = mergeTeamIds(teamId, teamIds);
         PubListSearchCondition condition = new PubListSearchCondition(
-                keyword, teamId, regions,
+                keyword, mergedTeamIds, regions,
                 facilityCodes, styleCodes, themeCodes, foodCodes,
-                capacityRange,
+                capacityRange, openNow, businessDay,
                 page, size == 0 ? DEFAULT_PAGE_SIZE : size
         );
         return ApiResponse.success(pubQueryService.findList(condition));
+    }
+
+    private List<Long> mergeTeamIds(Long teamId, List<Long> teamIds) {
+        if (teamIds != null && !teamIds.isEmpty()) {
+            return teamIds;
+        }
+        if (teamId != null) {
+            return List.of(teamId);
+        }
+        return List.of();
     }
 
     @Operation(

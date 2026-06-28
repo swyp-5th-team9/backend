@@ -23,7 +23,13 @@ public enum Region {
     SEONGDONG(Metro.SEOUL, "성동구"),
     SEONGBUK(Metro.SEOUL, "성북구"),
     SONGPA(Metro.SEOUL, "송파구"),
-    YANGCHEON(Metro.SEOUL, "양천구");
+    YANGCHEON(Metro.SEOUL, "양천구"),
+    JUNG(Metro.SEOUL, "중구"),
+    JONGNO(Metro.SEOUL, "종로구"),
+    YONGSAN(Metro.SEOUL, "용산구"),
+    YEONGDEUNGPO(Metro.SEOUL, "영등포구"),
+    EUNPYEONG(Metro.SEOUL, "은평구"),
+    JUNGNANG(Metro.SEOUL, "중랑구");
 
     private final Metro metro;
     private final String displayName;
