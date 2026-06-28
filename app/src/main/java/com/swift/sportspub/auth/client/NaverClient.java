@@ -1,6 +1,7 @@
 package com.swift.sportspub.auth.client;
 
 import com.swift.sportspub.auth.dto.provider.NaverUserInfo;
+import com.swift.sportspub.auth.support.OAuthAuthorizationHeader;
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
 import org.springframework.http.HttpHeaders;
@@ -13,7 +14,6 @@ public class NaverClient {
 
     private static final String NAVER_API_BASE_URL = "https://openapi.naver.com";
     private static final String USER_INFO_PATH = "/v1/nid/me";
-    private static final String BEARER_PREFIX = "Bearer ";
     private static final String INVALID_TOKEN_MESSAGE = "유효하지 않은 네이버 accessToken입니다.";
 
     private final RestClient restClient;
@@ -37,7 +37,7 @@ public class NaverClient {
         try {
             NaverUserInfo userInfo = restClient.get()
                     .uri(USER_INFO_PATH)
-                    .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
+                    .header(HttpHeaders.AUTHORIZATION, OAuthAuthorizationHeader.toBearerAuthorization(accessToken))
                     .retrieve()
                     .body(NaverUserInfo.class);
 
