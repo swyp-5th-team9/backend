@@ -63,4 +63,15 @@ public class RefreshToken extends BaseEntity {
     public boolean isExpired() {
         return expiresAt.isBefore(LocalDateTime.now());
     }
+
+    /*
+     * refresh_tokens.user_id 에 UNIQUE(uk_refresh_tokens_user) 제약이 있어 사용자당 row는 1개만 존재한다.
+     * delete 후 insert 방식은 같은 트랜잭션에서 DELETE가 DB에 반영되기 전 INSERT가 실행되면
+     * 동일 user_id로 duplicate key(uk_refresh_tokens_user)가 발생한다.
+     * 기존 row의 token_hash·expires_at만 갱신(UPDATE)하면 UNIQUE 충돌 없이 토큰 회전이 가능하다.
+     */
+    public void rotate(String tokenHash, LocalDateTime expiresAt) {
+        this.tokenHash = tokenHash;
+        this.expiresAt = expiresAt;
+    }
 }

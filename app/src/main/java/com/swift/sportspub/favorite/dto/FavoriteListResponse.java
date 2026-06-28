@@ -13,8 +13,4 @@ public record FavoriteListResponse(
     public static FavoriteListResponse of(List<FavoriteItemResponse> favorites) {
         return new FavoriteListResponse(favorites);
     }
-
-    public static FavoriteListResponse empty() {
-        return new FavoriteListResponse(List.of());
-    }
 }
