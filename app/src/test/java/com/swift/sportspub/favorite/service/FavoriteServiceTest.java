@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,10 +43,18 @@ class FavoriteServiceTest {
                 .build();
         given(userService.getUser(1L)).willReturn(user);
         given(favoriteRepository.existsActivePub(10L)).willReturn(true);
-        given(favoriteRepository.countByUserUserId(1L)).willReturn(0L);
         given(favoriteRepository.existsByUserUserIdAndPubId(1L, 10L)).willReturn(false);
+        given(favoriteRepository.countByUserUserId(1L)).willReturn(0L);
+        Favorite saved = Favorite.builder()
+                .user(user)
+                .pubId(10L)
+                .build();
+        ReflectionTestUtils.setField(saved, "favoriteId", 42L);
+        given(favoriteRepository.save(any())).willReturn(saved);
 
-        favoriteService.addFavorite(1L, 10L);
+        Long favoriteId = favoriteService.addFavorite(1L, 10L);
+
+        assertThat(favoriteId).isEqualTo(42L);
 
         ArgumentCaptor<Favorite> captor = ArgumentCaptor.forClass(Favorite.class);
         verify(favoriteRepository).save(captor.capture());
@@ -75,8 +84,7 @@ class FavoriteServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException businessException = (BusinessException) ex;
-                    assertThat(businessException.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
-                    assertThat(businessException.getMessage()).contains("존재하지 않는 pubId");
+                    assertThat(businessException.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
                 });
 
         verify(favoriteRepository, never()).save(any());
@@ -89,7 +97,6 @@ class FavoriteServiceTest {
                 .oauthId("oauth-1")
                 .build());
         given(favoriteRepository.existsActivePub(10L)).willReturn(true);
-        given(favoriteRepository.countByUserUserId(1L)).willReturn(1L);
         given(favoriteRepository.existsByUserUserIdAndPubId(1L, 10L)).willReturn(true);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(1L, 10L))
@@ -109,6 +116,7 @@ class FavoriteServiceTest {
                 .oauthId("oauth-1")
                 .build());
         given(favoriteRepository.existsActivePub(10L)).willReturn(true);
+        given(favoriteRepository.existsByUserUserIdAndPubId(1L, 10L)).willReturn(false);
         given(favoriteRepository.countByUserUserId(1L)).willReturn(30L);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(1L, 10L))

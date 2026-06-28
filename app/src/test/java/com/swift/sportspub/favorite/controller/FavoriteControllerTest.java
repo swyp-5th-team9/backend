@@ -21,8 +21,8 @@ import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.doThrow;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,11 +56,12 @@ class FavoriteControllerTest {
 
     @Test
     void addFavorite_returnsSuccess() throws Exception {
-        doNothing().when(favoriteService).addFavorite(eq(1L), eq(10L));
+        given(favoriteService.addFavorite(1L, 10L)).willReturn(42L);
 
         mockMvc.perform(post("/api/v1/favorites/{pubId}", 10L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(42));
 
         verify(favoriteService).addFavorite(1L, 10L);
     }
@@ -77,12 +78,12 @@ class FavoriteControllerTest {
     }
 
     @Test
-    void addFavorite_invalidPub_returnsBadRequest() throws Exception {
-        doThrow(new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 pubId입니다."))
+    void addFavorite_invalidPub_returnsNotFound() throws Exception {
+        doThrow(new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다."))
                 .when(favoriteService).addFavorite(eq(1L), eq(99L));
 
         mockMvc.perform(post("/api/v1/favorites/{pubId}", 99L))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false));
     }
 }
