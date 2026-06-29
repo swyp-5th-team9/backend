@@ -1,6 +1,6 @@
 package com.swift.sportspub.report.storage;
 
-// TODO [배포 시 주석 해제] S3 인프라 연동
+// TODO [S3 배포 시 주석 해제] 2단계: S3 업로드 서비스 활성화
 // import com.swift.sportspub.config.S3Properties;
 // import lombok.RequiredArgsConstructor;
 // import org.springframework.stereotype.Service;
@@ -14,8 +14,21 @@ package com.swift.sportspub.report.storage;
 
 /**
  * 제보 이미지 S3 업로드 서비스.
- * 로컬 개발 환경에서는 S3Client 빈이 없으므로 비활성화한다.
- * 배포 시 아래 주석을 해제하고 ReportService의 로컬 업로드 대체 로직을 제거한다.
+ *
+ * <p>로컬 개발 환경에서는 {@link com.swift.sportspub.config.S3Config} 가 비활성화되어
+ * S3Client 빈이 없으므로 이 클래스도 비활성화한다.
+ * 로컬에서는 {@link com.swift.sportspub.report.service.ReportService#buildLocalImageUrl} 가
+ * placeholder URL을 생성한다.
+ *
+ * <p>[S3 배포 시]
+ * <ol>
+ *   <li>{@code S3Config} 주석 해제 (선행 조건)</li>
+ *   <li>이 클래스의 {@code @Service}, {@code upload()} 등 전체 구현 주석 해제</li>
+ *   <li>{@code ReportService} — {@code reportS3StorageService.upload(image)} 사용,
+ *       {@code buildLocalImageUrl()} 제거</li>
+ * </ol>
+ *
+ * <p>Controller, {@link com.swift.sportspub.report.dto.ReportCreateRequest}, multipart API 계약은 변경하지 않는다.
  */
 // @Service
 // @RequiredArgsConstructor
