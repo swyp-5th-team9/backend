@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -67,5 +68,29 @@ public class FavoriteController {
     ) {
         favoriteService.deleteFavorites(userId, request);
         return ApiResponse.success();
+    }
+
+    @Operation(
+            summary = "즐겨찾기 추가",
+            description = """
+                    로그인한 사용자가 펍을 즐겨찾기에 추가한다.
+                    동일한 펍은 중복 등록할 수 없으며, 사용자당 최대 30개까지 등록할 수 있다.
+                    성공 시 생성된 favoriteId를 반환한다.
+                    """
+    )
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "추가 성공"),
+            @DocResponse(responseCode = "401", description = "인증 필요"),
+            @DocResponse(responseCode = "404", description = "존재하지 않는 펍"),
+            @DocResponse(responseCode = "409", description = "이미 즐겨찾기한 펍"),
+            @DocResponse(responseCode = "400", description = "즐겨찾기 30개 초과"),
+            @DocResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping("/{pubId}")
+    public ApiResponse<Long> addFavorite(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long pubId
+    ) {
+        return ApiResponse.success(favoriteService.addFavorite(userId, pubId));
     }
 }
