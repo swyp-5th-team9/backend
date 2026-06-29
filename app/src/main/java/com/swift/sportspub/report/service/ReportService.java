@@ -10,7 +10,8 @@ import com.swift.sportspub.report.entity.Report;
 import com.swift.sportspub.report.entity.ReportImage;
 import com.swift.sportspub.report.repository.ReportImageRepository;
 import com.swift.sportspub.report.repository.ReportRepository;
-import com.swift.sportspub.report.storage.ReportS3StorageService;
+// TODO [배포 시 주석 해제] S3 인프라 연동
+// import com.swift.sportspub.report.storage.ReportS3StorageService;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,18 +21,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ReportService {
 
     private static final int MAX_IMAGES = 3;
+    private static final String LOCAL_IMAGE_URL_PREFIX = "local://reports/";
 
     private final UserService userService;
     private final PubRepository pubRepository;
     private final ReportRepository reportRepository;
     private final ReportImageRepository reportImageRepository;
-    private final ReportS3StorageService reportS3StorageService;
+    // TODO [배포 시 주석 해제] S3 인프라 연동
+    // private final ReportS3StorageService reportS3StorageService;
 
     @Transactional
     public ReportCreateResponse createReport(Long userId, ReportCreateRequest request) {
@@ -51,7 +55,9 @@ public class ReportService {
         );
 
         for (MultipartFile image : images) {
-            String imageUrl = reportS3StorageService.upload(image);
+            // TODO [배포 시 제거] 로컬 개발용 이미지 URL. 배포 시 reportS3StorageService.upload(image)로 교체
+            String imageUrl = buildLocalImageUrl(image);
+            // String imageUrl = reportS3StorageService.upload(image);
             reportImageRepository.save(
                     ReportImage.builder()
                             .report(report)
@@ -61,6 +67,15 @@ public class ReportService {
         }
 
         return ReportCreateResponse.from(report);
+    }
+
+    // TODO [배포 시 제거] S3 연동 전 로컬 개발용 placeholder URL
+    private String buildLocalImageUrl(MultipartFile file) {
+        String filename = file.getOriginalFilename();
+        if (filename == null || filename.isBlank()) {
+            filename = "image";
+        }
+        return LOCAL_IMAGE_URL_PREFIX + UUID.randomUUID() + "-" + filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 
     private Pub resolvePub(Long pubId) {
