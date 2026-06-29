@@ -54,4 +54,4 @@ application-prod.properties
 !.env.example
 
 # Local debug — SDK access token 임시 메모
-tokens
+tokens*
