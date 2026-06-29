@@ -43,10 +43,10 @@ build/
 Thumbs.db
 
 # Spring Boot local config (secrets)
+# application-prod.yml 은 env 변수 주입형(시크릿 없음)이라 tracked.
+# 시크릿은 절대 박지 말고 ${ENV_NAME} 형태만 사용할 것.
 application-local.yml
 application-local.properties
-application-prod.yml
-application-prod.properties
 
 # Env files
 .env
