@@ -12,4 +12,6 @@ public interface PubImageRepository extends JpaRepository<PubImage, Long> {
     Optional<PubImage> findFirstByPubIdOrderByDisplayOrderAsc(Long pubId);
 
     List<PubImage> findAllByPubIdInOrderByPubIdAscDisplayOrderAsc(Collection<Long> pubIds);
+
+    List<PubImage> findAllByPubIdOrderByDisplayOrderAscImageIdAsc(Long pubId);
 }

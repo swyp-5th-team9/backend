@@ -15,7 +15,9 @@ public enum PubFacilityCode {
     VALET_PARKING("발렛파킹"),
     PET_FRIENDLY("반려동물 동반"),
     PRIVATE_BOOKING("단체 대관"),
-    WHEELCHAIR_ACCESS("휠체어 접근");
+    WHEELCHAIR_ACCESS("휠체어 접근"),
+    OUTDOOR_SEAT("야외좌석"),
+    RESERVATION("예약가능");
 
     private final String displayName;
 
