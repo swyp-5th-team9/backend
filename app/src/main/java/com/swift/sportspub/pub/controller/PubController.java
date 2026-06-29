@@ -42,9 +42,11 @@ public class PubController {
             summary = "펍 목록 조회",
             description = """
                     리스트 화면용 펍 목록.
-                    키워드(이름/주소 ILIKE) + 구단·지역·시설·스타일·테마·음식·수용 규모 필터,
-                    페이징(0부터 시작, 기본 20·최대 50), favorite_count DESC 정렬을 지원한다.
-                    region 파라미터는 자치구 코드(GANGNAM 등) 또는 광역 코드(SEOUL 등) 모두 허용.
+                    필터: 키워드(이름/주소 ILIKE) · 응원 구단(teamId 단일 또는 teamIds 다중 OR) ·
+                    지역(region — 자치구 코드 또는 광역 코드) · 시설/스타일/테마/음식 코드(각 AND 매칭) ·
+                    수용 규모 · 영업중 여부(openNow) · 영업요일(businessDay — 선택 요일 전부 영업).
+                    페이징(0부터, 기본 20·최대 50), 정렬 favorite_count DESC.
+                    teamId 와 teamIds 동시 전송 시 teamIds 우선.
                     """
     )
     @DocResponses({
