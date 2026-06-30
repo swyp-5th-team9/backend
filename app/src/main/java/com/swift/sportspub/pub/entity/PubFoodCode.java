@@ -8,14 +8,15 @@ public enum PubFoodCode {
     CHICKEN("치킨"),
     PIZZA("피자"),
     TACO("타코"),
-    FRIES("감자튀김"),
+    FRY("튀김"),
+    STEW("찌개/탕"),
+    GRILLED("구이/볶음"),
     BUNSIK("분식"),
-    GRILLED("구이류"),
     DRY_SNACK("마른안주"),
+    SOJU("소주"),
     BEER("맥주"),
     COCKTAIL("칵테일"),
-    HIGHBALL("하이볼"),
-    SOJU("소주");
+    HIGHBALL("하이볼");
 
     private final String displayName;
 
