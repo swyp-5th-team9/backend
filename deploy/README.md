@@ -24,8 +24,8 @@ sudo nano /etc/moball/moball.env
 sudo chown root:moball /etc/moball/moball.env
 sudo chmod 640 /etc/moball/moball.env
 
-# 3) 로컬에서 빌드한 jar 받아서 배포
-#    (로컬) ./gradlew :app:bootJar && scp app/build/libs/app-0.0.1-SNAPSHOT.jar <EC2>:/tmp/app.jar
+# 3) 로컬에서 빌드한 jar 받아서 배포 (jar 이름은 build.gradle 에서 moball-app.jar 로 고정)
+#    (로컬) ./gradlew :app:bootJar && scp app/build/libs/moball-app.jar <EC2>:/tmp/app.jar
 ./02_deploy.sh
 
 # 4) HTTPS 셋업 (도메인이 EC2 IP 가리키도록 DuckDNS 설정 먼저)
@@ -73,9 +73,9 @@ sudo systemctl enable moball-backend
 ### 4. JAR 배포
 
 ```bash
-# 로컬
+# 로컬 (jar 산출물 이름은 build.gradle 에서 moball-app.jar 로 고정 — 버전 무관)
 ./gradlew :app:bootJar
-scp app/build/libs/app-0.0.1-SNAPSHOT.jar ec2:/tmp/app.jar
+scp app/build/libs/moball-app.jar ec2:/tmp/app.jar
 
 # EC2
 sudo mv /tmp/app.jar /opt/moball/app.jar

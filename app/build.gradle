@@ -3,7 +3,7 @@ plugins {
 }
 
 bootJar {
-    archiveFileName = 'sportspub-app.jar'
+    archiveFileName = 'moball-app.jar'
 }
 
 dependencies {

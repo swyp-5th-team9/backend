@@ -6,8 +6,10 @@
 #
 # 로컬에서 빌드 후 scp 로 /tmp/app.jar 에 올려둔 다음 이 스크립트를 실행.
 #   (로컬) ./gradlew :app:bootJar
-#   (로컬) scp app/build/libs/app-0.0.1-SNAPSHOT.jar <EC2>:/tmp/app.jar
+#   (로컬) scp app/build/libs/moball-app.jar <EC2>:/tmp/app.jar
 #   (EC2) ./02_deploy.sh
+#
+# jar 산출물 이름은 build.gradle 에서 moball-app.jar 로 고정 (버전 무관).
 
 set -euo pipefail
 
