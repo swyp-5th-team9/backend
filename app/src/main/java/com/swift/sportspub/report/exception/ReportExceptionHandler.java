@@ -12,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -52,6 +53,14 @@ public class ReportExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ReportErrorResponse.of(ReportErrorCode.INVALID_REPORT_CATEGORY));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ReportErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        log.warn("Report image size exceeded servlet limit: {}", e.getMessage());
+        return ResponseEntity
+                .badRequest()
+                .body(ReportErrorResponse.of(ReportErrorCode.REPORT_IMAGE_SIZE_EXCEEDED));
     }
 
     @ExceptionHandler(Exception.class)
