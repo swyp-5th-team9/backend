@@ -11,8 +11,8 @@ import com.swift.sportspub.pub.dto.PubListResponse;
 import com.swift.sportspub.pub.dto.PubListSearchCondition;
 import com.swift.sportspub.pub.dto.PubMapResponse;
 import com.swift.sportspub.pub.entity.CapacityRange;
-import com.swift.sportspub.pub.entity.Region;
 import com.swift.sportspub.pub.service.PubQueryService;
+import com.swift.sportspub.pub.service.RegionFilter;
 import com.swift.sportspub.pub.service.RegionResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -66,7 +66,7 @@ public class PubController {
             @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
             @RequestParam(required = false) List<Long> teamIds,
 
-            @Parameter(description = "지역 — 자치구 코드 또는 광역 코드", example = "GANGNAM")
+            @Parameter(description = "지역 — 자치구 코드/광역 코드/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
             @RequestParam(required = false) String region,
 
             @Parameter(description = "시설 코드 (AND, 예: GROUP_SEAT, PARKING)")
@@ -99,10 +99,10 @@ public class PubController {
         if (page < 0 || size <= 0 || size > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        List<Region> regions = RegionResolver.resolve(region);
+        RegionFilter regionFilter = RegionResolver.resolve(region);
         List<Long> mergedTeamIds = mergeTeamIds(teamId, teamIds);
         PubListSearchCondition condition = new PubListSearchCondition(
-                keyword, mergedTeamIds, regions,
+                keyword, mergedTeamIds, regionFilter.regions(), regionFilter.subRegion(),
                 facilityCodes, styleCodes, themeCodes, foodCodes,
                 capacityRange, openNow, businessDay,
                 page, size == 0 ? DEFAULT_PAGE_SIZE : size

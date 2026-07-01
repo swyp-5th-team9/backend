@@ -42,6 +42,10 @@ public class Pub extends BaseEntity {
     @Column(name = "region", nullable = false, length = 30)
     private Region region;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sub_region", length = 30)
+    private SubRegion subRegion;
+
     @Column(name = "latitude", nullable = false, precision = 10, scale = 7)
     private BigDecimal latitude;
 
