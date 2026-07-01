@@ -1,0 +1,26 @@
+[Unit]
+Description=Moball Backend (Spring Boot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=moball
+Group=moball
+WorkingDirectory=/opt/moball
+EnvironmentFile=/etc/moball/moball.env
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/moball/app.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/moball/app.log
+StandardError=append:/var/log/moball/app.log
+
+# 보안 강화
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
