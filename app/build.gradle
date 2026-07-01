@@ -26,5 +26,8 @@ dependencies {
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
 
+    implementation platform('software.amazon.awssdk:bom:2.31.47')
+    implementation 'software.amazon.awssdk:s3'
+
     testImplementation 'org.springframework.security:spring-security-test'
 }
