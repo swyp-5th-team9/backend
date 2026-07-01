@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# EC2 (Ubuntu 22.04) 초기 셋업.
+# EC2 (Ubuntu 24.04) 초기 셋업.
 # 실행 위치: EC2 안에서, repo clone 후 backend/deploy/scripts/ 에서.
 # 멱등성 보장 — 여러 번 실행해도 안전.
 
