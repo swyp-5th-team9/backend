@@ -66,6 +66,8 @@ app:
     refresh-ttl-seconds: 1209600    # 14일
   deeplink:
     scheme: sportspub://auth/callback
+  # AWS S3 — .env: S3_BUCKET, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+  # TODO [AWS]: reports/* GetObject 허용 전까지 저장 URL 브라우저 접근 시 AccessDenied (ReportS3StorageService 참고)
   s3:
     bucket: ${S3_BUCKET:}
     region: ${AWS_REGION:ap-northeast-2}
