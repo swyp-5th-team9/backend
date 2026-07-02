@@ -66,6 +66,10 @@ public class UserService {
     @Transactional
     public void onboarding(Long userId, OnboardingRequest request) {
         User user = getUser(userId);
+        // #60: 온보딩은 1회만 허용. 재호출 시 프로필·선호 구단이 덮어쓰이는 것을 방지한다.
+        if (user.isOnboardingCompleted()) {
+            throw new BusinessException(ErrorCode.CONFLICT, "이미 온보딩이 완료된 사용자입니다.");
+        }
         user.completeOnboarding(request.nickname());
         replaceFavoriteTeams(user, request.teamIds());
     }
