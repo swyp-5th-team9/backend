@@ -1,6 +1,7 @@
 package com.swift.sportspub.favorite.entity;
 
 import com.swift.sportspub.common.entity.BaseEntity;
+import com.swift.sportspub.pub.entity.Pub;
 import com.swift.sportspub.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,18 +41,27 @@ public class Favorite extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "pub_id", nullable = false)
+    private Pub pub;
+
     /*
-     * pubId는 Long FK 컬럼으로 보관한다. (#60)
-     * MVP: FavoriteService에서 PubRepository·PubImageRepository batch 조회로 N+1을 방지한다.
-     * soft-deleted pub는 Pub @SQLRestriction으로 제외되며, 목록 API는 pubName·region·thumbnail=null로 반환한다.
-     * TODO(#60 보류): @ManyToOne Pub 전환 및 fetch join 전략 검토
+     * pub_id FK read-only 미러 — ERD fk_favorites_pub 와 동일 컬럼.
+     * soft-deleted pub는 Pub @SQLRestriction 으로 lazy load 없이 id만 batch 조회할 때 사용한다.
      */
-    @Column(name = "pub_id", nullable = false)
+    @Column(name = "pub_id", nullable = false, insertable = false, updatable = false)
     private Long pubId;
 
     @Builder
-    private Favorite(User user, Long pubId) {
+    private Favorite(User user, Pub pub) {
         this.user = user;
-        this.pubId = pubId;
+        this.pub = pub;
+    }
+
+    public Long getPubId() {
+        if (pubId != null) {
+            return pubId;
+        }
+        return pub != null ? pub.getPubId() : null;
     }
 }

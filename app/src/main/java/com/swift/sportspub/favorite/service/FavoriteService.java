@@ -93,23 +93,18 @@ public class FavoriteService {
     public Long addFavorite(Long userId, Long pubId) {
         User user = userService.getUser(userId);
 
-        validatePubExists(pubId);
+        Pub pub = pubRepository.findById(pubId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다."));
         validateNotDuplicate(userId, pubId);
         validateFavoriteLimit(userId);
 
         Favorite saved = favoriteRepository.save(
                 Favorite.builder()
                         .user(user)
-                        .pubId(pubId)
+                        .pub(pub)
                         .build()
         );
         return saved.getFavoriteId();
-    }
-
-    private void validatePubExists(Long pubId) {
-        if (!favoriteRepository.existsActivePub(pubId)) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다.");
-        }
     }
 
     private void validateFavoriteLimit(Long userId) {
@@ -119,7 +114,7 @@ public class FavoriteService {
     }
 
     private void validateNotDuplicate(Long userId, Long pubId) {
-        if (favoriteRepository.existsByUserUserIdAndPubId(userId, pubId)) {
+        if (favoriteRepository.existsByUserUserIdAndPubPubId(userId, pubId)) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 즐겨찾기한 pub입니다.");
         }
     }

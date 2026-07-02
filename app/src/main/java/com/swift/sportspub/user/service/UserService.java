@@ -111,12 +111,12 @@ public class UserService {
         }
 
         List<Long> distinctTeamIds = new ArrayList<>(new LinkedHashSet<>(teamIds));
-        validateTeamIdsExist(distinctTeamIds);
+        Map<Long, Team> teamById = validateTeamIdsExist(distinctTeamIds);
 
         List<UserFavoriteTeam> favoriteTeams = distinctTeamIds.stream()
                 .map(teamId -> UserFavoriteTeam.builder()
                         .user(user)
-                        .teamId(teamId)
+                        .team(teamById.get(teamId))
                         .build())
                 .toList();
 
@@ -124,13 +124,16 @@ public class UserService {
         userFavoriteTeamRepository.saveAll(favoriteTeams);
     }
 
-    private void validateTeamIdsExist(List<Long> teamIds) {
+    private Map<Long, Team> validateTeamIdsExist(List<Long> teamIds) {
         if (teamIds.isEmpty()) {
-            return;
+            return Map.of();
         }
-        if (teamRepository.findAllById(teamIds).size() != teamIds.size()) {
+        Map<Long, Team> teamById = teamRepository.findAllById(teamIds).stream()
+                .collect(Collectors.toMap(Team::getTeamId, Function.identity()));
+        if (teamById.size() != teamIds.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 teamId가 포함되어 있습니다.");
         }
+        return teamById;
     }
 
     private UserResponse toUserResponse(User user) {
@@ -153,20 +156,11 @@ public class UserService {
             return List.of();
         }
 
-        List<Long> teamIds = favoriteTeams.stream()
-                .map(UserFavoriteTeam::getTeamId)
-                .toList();
-
-        Map<Long, Team> teamById = teamRepository.findAllById(teamIds).stream()
-                .collect(Collectors.toMap(Team::getTeamId, Function.identity()));
-
         return favoriteTeams.stream()
-                .map(favoriteTeam -> {
-                    Team team = teamById.get(favoriteTeam.getTeamId());
-                    // #60: team_id만 FK로 보유하므로 Team row가 없으면 NPE 대신 teamName=null 반환
-                    String teamName = team != null ? team.getShortName() : null;
-                    return new FavoriteTeamResponse(favoriteTeam.getTeamId(), teamName);
-                })
+                .map(favoriteTeam -> new FavoriteTeamResponse(
+                        favoriteTeam.getTeamId(),
+                        favoriteTeam.getTeam().getShortName()
+                ))
                 .toList();
     }
 }
