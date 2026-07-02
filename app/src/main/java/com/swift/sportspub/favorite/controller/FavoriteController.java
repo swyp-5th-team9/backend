@@ -32,7 +32,7 @@ public class FavoriteController {
                     현재 로그인한 사용자의 즐겨찾기 목록을 조회한다.
                     createdAt 내림차순으로 정렬하며 최대 30개까지 반환한다.
                     즐겨찾기가 없으면 빈 배열을 반환한다.
-                    pubName, thumbnailImageUrl은 Pub 도메인 연동 후 제공된다.
+                    pubName, region, thumbnailImageUrl은 연결된 활성 Pub 정보를 기준으로 반환한다.
                     """
     )
     @DocResponses({
