@@ -34,9 +34,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 5. 활성 회원일 때만 userId를 principal로 하는 Authentication을 SecurityContext에 저장한다.
      *
      * 현재 MVP는 OAuth 소셜 로그인만 제공하므로 Username/Password 로그인 구조를 만들지 않는다.
-     * UserDetails 대신 userId만 principal로 두되, 탈퇴 회원 AccessToken은 인증 실패(401)로 처리한다. (#60)
-     * 추후 Role 인가, @AuthenticationPrincipal에서 상세 회원 정보가 필요해지면
-     * CustomUserDetails와 UserDetailsService로 확장할 수 있다.
+     * UserDetails 대신 userId만 principal로 두되, 탈퇴 회원 AccessToken은 인증 실패(401)로 처리한다. (#60 — existsByUserIdAndDeletedAtIsNull)
+     * TODO(후속): Role 기반 인가, @AuthenticationPrincipal 상세 회원 정보가 필요해지면
+     * CustomUserDetails와 UserDetailsService로 확장한다.
      */
     @Override
     protected void doFilterInternal(

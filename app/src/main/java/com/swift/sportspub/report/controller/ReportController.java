@@ -25,9 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 제보 API.
  *
- * <p>[S3 배포 시] 이 Controller는 변경하지 않는다.
- * multipart/form-data, {@code @ModelAttribute}, API URL·응답 형식은 Local/S3 공통으로 유지한다.
- * 이미지 업로드 구현만 ReportService → ReportS3StorageService 쪽에서 교체한다.
+ * <p>multipart/form-data, {@code @ModelAttribute}, API URL·응답 형식은 유지한다.
+ * 이미지 업로드는 ReportService → ReportS3StorageService(S3 putObject)로 처리한다.
  */
 @Tag(name = "Report", description = "제보 API")
 @RestController

@@ -42,7 +42,12 @@ public class UserFavoriteTeam {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: @ManyToOne Team 연관관계 전환 검토 (전환 시 N+1 방지 fetch join 함께 검토)
+    /*
+     * teamId는 Long FK 컬럼으로 보관한다. (#60)
+     * MVP: UserService.buildFavoriteTeamResponses()에서 TeamRepository batch 조회;
+     * Team row가 없으면 teamName=null로 반환한다(NPE 방어).
+     * TODO(#60 보류): @ManyToOne Team 전환 및 fetch join 전략 검토
+     */
     @Column(name = "team_id", nullable = false)
     private Long teamId;
 

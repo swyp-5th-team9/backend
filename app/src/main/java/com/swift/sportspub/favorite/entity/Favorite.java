@@ -40,7 +40,12 @@ public class Favorite extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: @ManyToOne Pub 연관관계 전환 검토 (전환 시 N+1 방지 fetch join 함께 검토)
+    /*
+     * pubId는 Long FK 컬럼으로 보관한다. (#60)
+     * MVP: FavoriteService에서 PubRepository·PubImageRepository batch 조회로 N+1을 방지한다.
+     * soft-deleted pub는 Pub @SQLRestriction으로 제외되며, 목록 API는 pubName·region·thumbnail=null로 반환한다.
+     * TODO(#60 보류): @ManyToOne Pub 전환 및 fetch join 전략 검토
+     */
     @Column(name = "pub_id", nullable = false)
     private Long pubId;
 

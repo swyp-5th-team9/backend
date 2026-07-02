@@ -61,6 +61,9 @@ public class FavoriteController {
             @DocResponse(responseCode = "404", description = "존재하지 않거나 삭제할 수 없는 즐겨찾기 포함"),
             @DocResponse(responseCode = "500", description = "서버 오류")
     })
+    /*
+     * Android 클라이언트 구현 및 RequestBody 일괄 삭제 호환성을 위해 POST /favorites/delete를 유지한다.
+     */
     @PostMapping("/delete")
     public ApiResponse<Void> deleteFavorites(
             @AuthenticationPrincipal Long userId,
