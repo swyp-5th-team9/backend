@@ -31,6 +31,10 @@ public class PubRepositoryCustomImpl implements PubRepositoryCustom {
             where.append(" AND p.region IN (:regions) ");
             params.put("regions", condition.regions().stream().map(Region::name).toList());
         }
+        if (condition.subRegion() != null) {
+            where.append(" AND p.sub_region = :subRegion ");
+            params.put("subRegion", condition.subRegion().name());
+        }
         if (condition.capacityRange() != null) {
             where.append(" AND p.capacity_range = :capacityRange ");
             params.put("capacityRange", condition.capacityRange().name());
