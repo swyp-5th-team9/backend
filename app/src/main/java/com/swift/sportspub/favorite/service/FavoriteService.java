@@ -7,6 +7,10 @@ import com.swift.sportspub.favorite.dto.FavoriteItemResponse;
 import com.swift.sportspub.favorite.dto.FavoriteListResponse;
 import com.swift.sportspub.favorite.entity.Favorite;
 import com.swift.sportspub.favorite.repository.FavoriteRepository;
+import com.swift.sportspub.pub.entity.Pub;
+import com.swift.sportspub.pub.entity.PubImage;
+import com.swift.sportspub.pub.repository.PubImageRepository;
+import com.swift.sportspub.pub.repository.PubRepository;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +18,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,16 +34,34 @@ public class FavoriteService {
 
     private final UserService userService;
     private final FavoriteRepository favoriteRepository;
+    private final PubRepository pubRepository;
+    private final PubImageRepository pubImageRepository;
 
     @Transactional(readOnly = true)
     public FavoriteListResponse getMyFavorites(Long userId) {
-        List<FavoriteItemResponse> favorites = favoriteRepository
-                .findTop30ByUserUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::toFavoriteItemResponse)
+        List<Favorite> favorites = favoriteRepository.findTop30ByUserUserIdOrderByCreatedAtDesc(userId);
+        if (favorites.isEmpty()) {
+            return FavoriteListResponse.of(List.of());
+        }
+
+        List<Long> pubIds = favorites.stream()
+                .map(Favorite::getPubId)
                 .toList();
 
-        return FavoriteListResponse.of(favorites);
+        Map<Long, Pub> pubById = pubRepository.findAllById(pubIds).stream()
+                .collect(Collectors.toMap(Pub::getPubId, Function.identity()));
+
+        Map<Long, String> thumbnailByPubId = buildThumbnailByPubId(pubIds);
+
+        List<FavoriteItemResponse> items = favorites.stream()
+                .map(favorite -> toFavoriteItemResponse(
+                        favorite,
+                        pubById.get(favorite.getPubId()),
+                        thumbnailByPubId.get(favorite.getPubId())
+                ))
+                .toList();
+
+        return FavoriteListResponse.of(items);
     }
 
     @Transactional
@@ -98,12 +124,38 @@ public class FavoriteService {
         }
     }
 
-    private FavoriteItemResponse toFavoriteItemResponse(Favorite favorite) {
+    private Map<Long, String> buildThumbnailByPubId(List<Long> pubIds) {
+        Map<Long, String> thumbnailByPubId = new HashMap<>();
+        for (PubImage image : pubImageRepository.findAllByPubIdInOrderByPubIdAscDisplayOrderAsc(pubIds)) {
+            thumbnailByPubId.putIfAbsent(image.getPubId(), image.getImageUrl());
+        }
+        return thumbnailByPubId;
+    }
+
+    private FavoriteItemResponse toFavoriteItemResponse(Favorite favorite, Pub pub, String thumbnailImageUrl) {
+        if (pub == null) {
+            return new FavoriteItemResponse(
+                    favorite.getFavoriteId(),
+                    favorite.getPubId(),
+                    null,
+                    null,
+                    null
+            );
+        }
+
         return new FavoriteItemResponse(
                 favorite.getFavoriteId(),
                 favorite.getPubId(),
-                null,
-                null
+                pub.getName(),
+                resolveRegionDisplay(pub),
+                thumbnailImageUrl
         );
+    }
+
+    private String resolveRegionDisplay(Pub pub) {
+        if (pub.getSubRegion() != null) {
+            return pub.getSubRegion().getDisplayName();
+        }
+        return pub.getRegion().getDisplayName();
     }
 }
