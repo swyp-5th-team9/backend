@@ -7,6 +7,7 @@ import com.swift.sportspub.team.repository.TeamRepository;
 import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.entity.OAuthProvider;
 import com.swift.sportspub.user.entity.User;
+import com.swift.sportspub.user.entity.UserFavoriteTeam;
 import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
 import com.swift.sportspub.user.repository.WithdrawalReasonRepository;
@@ -64,5 +65,28 @@ class UserServiceTest {
                 });
 
         verify(userFavoriteTeamRepository, never()).deleteByUserId(1L);
+    }
+
+    @Test
+    void getMyInfo_whenTeamRowMissing_returnsNullTeamName() {
+        User user = User.createOAuthUser(OAuthProvider.KAKAO, "oauth-1");
+        ReflectionTestUtils.setField(user, "userId", 1L);
+        user.completeOnboarding("닉네임");
+
+        UserFavoriteTeam favoriteTeam = UserFavoriteTeam.builder()
+                .user(user)
+                .teamId(99L)
+                .build();
+
+        given(userRepository.findActiveById(1L)).willReturn(Optional.of(user));
+        given(userFavoriteTeamRepository.findByUserUserIdOrderByCreatedAtAsc(1L))
+                .willReturn(List.of(favoriteTeam));
+        given(teamRepository.findAllById(List.of(99L))).willReturn(List.of());
+
+        var response = userService.getMyInfo(1L);
+
+        assertThat(response.favoriteTeams()).hasSize(1);
+        assertThat(response.favoriteTeams().getFirst().teamId()).isEqualTo(99L);
+        assertThat(response.favoriteTeams().getFirst().teamName()).isNull();
     }
 }

@@ -163,7 +163,9 @@ public class UserService {
         return favoriteTeams.stream()
                 .map(favoriteTeam -> {
                     Team team = teamById.get(favoriteTeam.getTeamId());
-                    return new FavoriteTeamResponse(favoriteTeam.getTeamId(), team.getShortName());
+                    // #60: team_id만 FK로 보유하므로 Team row가 없으면 NPE 대신 teamName=null 반환
+                    String teamName = team != null ? team.getShortName() : null;
+                    return new FavoriteTeamResponse(favoriteTeam.getTeamId(), teamName);
                 })
                 .toList();
     }
