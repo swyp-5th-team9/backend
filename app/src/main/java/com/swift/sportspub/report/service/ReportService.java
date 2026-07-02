@@ -10,8 +10,7 @@ import com.swift.sportspub.report.exception.ReportErrorCode;
 import com.swift.sportspub.report.exception.ReportException;
 import com.swift.sportspub.report.repository.ReportImageRepository;
 import com.swift.sportspub.report.repository.ReportRepository;
-// TODO [S3 배포 시 주석 해제] 3단계: ReportS3StorageService 주입
-// import com.swift.sportspub.report.storage.ReportS3StorageService;
+import com.swift.sportspub.report.storage.ReportS3StorageService;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * 제보 등록 서비스.
- *
- * <p>[S3 배포 시 변경 체크리스트]
- * <ol>
- *   <li>{@code S3Config} — {@code @Configuration}, {@code S3Client} 빈 주석 해제</li>
- *   <li>{@code ReportS3StorageService} — {@code @Service} 및 upload 로직 주석 해제</li>
- *   <li>환경 변수 — {@code S3_BUCKET}, {@code AWS_ACCESS_KEY_ID}, {@code AWS_SECRET_ACCESS_KEY} 설정
- *       ({@code .env} / {@code application-local.yml} 의 {@code app.s3.*})</li>
- *   <li>이 클래스 — 아래 {@code reportS3StorageService} 주입·{@code upload()} 호출로 교체,
- *       {@code buildLocalImageUrl()} 및 {@code LOCAL_IMAGE_URL_PREFIX} 제거</li>
- * </ol>
  *
  * <p>Controller, {@link ReportCreateRequest}, {@code createReport(userId, request)} 시그니처는 변경하지 않는다.
  */
@@ -59,15 +47,11 @@ public class ReportService {
             "jpg", "jpeg", "png", "gif", "webp"
     );
 
-    // TODO [S3 배포 시 제거] 로컬 개발용 placeholder URL prefix
-    private static final String LOCAL_IMAGE_URL_PREFIX = "local://reports/";
-
     private final UserService userService;
     private final PubRepository pubRepository;
     private final ReportRepository reportRepository;
     private final ReportImageRepository reportImageRepository;
-    // TODO [S3 배포 시 주석 해제] 3단계: 아래 필드 주입 후 buildLocalImageUrl 대신 upload() 사용
-    // private final ReportS3StorageService reportS3StorageService;
+    private final ReportS3StorageService reportS3StorageService;
 
     @Transactional
     public ReportCreateResponse createReport(Long userId, ReportCreateRequest request) {
@@ -86,9 +70,7 @@ public class ReportService {
         );
 
         for (MultipartFile image : images) {
-            // TODO [S3 배포 시] buildLocalImageUrl() 제거 후 아래 한 줄만 사용
-            String imageUrl = buildLocalImageUrl(image);
-            // String imageUrl = reportS3StorageService.upload(image);
+            String imageUrl = reportS3StorageService.upload(image);
             reportImageRepository.save(
                     ReportImage.builder()
                             .report(report)
@@ -98,15 +80,6 @@ public class ReportService {
         }
 
         return ReportCreateResponse.from(report);
-    }
-
-    // TODO [S3 배포 시 제거] 로컬 개발용 — S3 연동 후 ReportS3StorageService.upload()로 대체
-    private String buildLocalImageUrl(MultipartFile file) {
-        String filename = file.getOriginalFilename();
-        if (filename == null || filename.isBlank()) {
-            filename = "image";
-        }
-        return LOCAL_IMAGE_URL_PREFIX + UUID.randomUUID() + "-" + filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 
     private Pub resolvePub(Long pubId) {
