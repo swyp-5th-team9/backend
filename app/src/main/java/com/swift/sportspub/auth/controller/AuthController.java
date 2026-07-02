@@ -5,6 +5,7 @@ import com.swift.sportspub.auth.dto.TokenReissueRequest;
 import com.swift.sportspub.auth.dto.TokenResponse;
 import com.swift.sportspub.auth.service.AuthService;
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Auth", description = "인증 API")
+@DocCommonErrorResponses
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

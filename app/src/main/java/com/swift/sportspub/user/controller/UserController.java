@@ -5,6 +5,7 @@ import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.dto.WithdrawRequest;
 import com.swift.sportspub.user.service.UserService;
+import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "User", description = "회원 API")
+@DocCommonErrorResponses
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor

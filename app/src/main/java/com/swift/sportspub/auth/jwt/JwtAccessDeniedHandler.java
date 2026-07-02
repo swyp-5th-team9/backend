@@ -1,6 +1,7 @@
 package com.swift.sportspub.auth.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +31,6 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getWriter(), ApiResponse.fail(FORBIDDEN_MESSAGE));
+        objectMapper.writeValue(response.getWriter(), ApiResponse.fail(ErrorCode.FORBIDDEN, FORBIDDEN_MESSAGE));
     }
 }

@@ -1,6 +1,7 @@
 package com.swift.sportspub.favorite.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.favorite.dto.FavoriteDeleteRequest;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Favorite", description = "즐겨찾기 API")
+@DocCommonErrorResponses
 @RestController
 @RequestMapping("/api/v1/favorites")
 @RequiredArgsConstructor

@@ -1,6 +1,7 @@
 package com.swift.sportspub.report.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.DocReportErrorResponses;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.report.dto.ReportCreateRequest;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 이미지 업로드는 ReportService → ReportS3StorageService(S3 putObject)로 처리한다.
  */
 @Tag(name = "Report", description = "제보 API")
+@DocReportErrorResponses
 @RestController
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor
@@ -55,11 +57,7 @@ public class ReportController {
             )
     )
     @DocResponses({
-            @DocResponse(responseCode = "201", description = "등록 성공"),
-            @DocResponse(responseCode = "400", description = "INVALID_REPORT_CATEGORY, REPORT_CONTENT_REQUIRED, REPORT_CONTENT_TOO_LONG, REPORT_IMAGE_LIMIT_EXCEEDED, REPORT_IMAGE_SIZE_EXCEEDED, UNSUPPORTED_IMAGE_FORMAT"),
-            @DocResponse(responseCode = "401", description = "UNAUTHORIZED"),
-            @DocResponse(responseCode = "404", description = "PUB_NOT_FOUND"),
-            @DocResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
+            @DocResponse(responseCode = "201", description = "등록 성공 — body: ApiResponse { success, data: { reportId } }")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ReportCreateResponse>> createReport(
