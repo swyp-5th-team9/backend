@@ -2,6 +2,7 @@ package com.swift.sportspub.pub.dto;
 
 import com.swift.sportspub.pub.entity.CapacityRange;
 import com.swift.sportspub.pub.entity.Region;
+import com.swift.sportspub.pub.entity.SubRegion;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ public record PubListSearchCondition(
         String keyword,
         List<Long> teamIds,
         List<Region> regions,
+        SubRegion subRegion,
         List<String> facilityCodes,
         List<String> styleCodes,
         List<String> themeCodes,
