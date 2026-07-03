@@ -16,7 +16,7 @@ import java.util.UUID;
  *
  * <p>Controller, {@link com.swift.sportspub.report.dto.ReportCreateRequest}, multipart API 계약은 변경하지 않는다.
  *
- * <p><b>[AWS 버킷 설정 TODO — URL로 이미지 조회 시 필수]</b>
+ * <p><b>운영 설정 필요 (인프라 — 애플리케이션 코드 변경 아님)</b>
  * 업로드({@code putObject})는 private 버킷에서도 성공하지만, 저장되는 URL은 퍼블릭 GET을 가정한다.
  * 버킷/객체가 private이면 브라우저에서 {@code AccessDenied}가 난다 (로컬·운영 동일).
  * <ul>
@@ -25,6 +25,10 @@ import java.util.UUID;
  *       (또는 CloudFront·Presigned URL 등 별도 설계)</li>
  *   <li>Block Public Access 설정과 정책 충돌 여부 확인</li>
  * </ul>
+ *
+ * <p><b>TODO (후속 이슈 — #60 보류)</b>
+ * {@link com.swift.sportspub.report.service.ReportService} 트랜잭션 내부에서 upload()를 호출하므로,
+ * DB 롤백 시 S3 객체가 orphan으로 남을 수 있다. 커밋 후 업로드 또는 compensating delete 검토.
  */
 @Service
 @RequiredArgsConstructor
@@ -56,7 +60,7 @@ public class ReportS3StorageService {
     /**
      * 퍼블릭 S3 URL 문자열을 반환한다. 실제 조회 가능 여부는 AWS 버킷 정책/ACL에 따른다.
      *
-     * @see #upload(MultipartFile) 클래스 Javadoc — [AWS 버킷 설정 TODO]
+     * @see #upload(MultipartFile) 클래스 Javadoc — 운영 설정 필요·후속 TODO
      */
     private String buildPublicUrl(String key) {
         return "https://%s.s3.%s.amazonaws.com/%s".formatted(

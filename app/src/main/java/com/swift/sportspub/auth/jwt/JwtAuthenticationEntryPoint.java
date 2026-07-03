@@ -1,6 +1,7 @@
 package com.swift.sportspub.auth.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +31,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getWriter(), ApiResponse.fail(UNAUTHORIZED_MESSAGE));
+        objectMapper.writeValue(response.getWriter(), ApiResponse.fail(ErrorCode.UNAUTHORIZED, UNAUTHORIZED_MESSAGE));
     }
 }

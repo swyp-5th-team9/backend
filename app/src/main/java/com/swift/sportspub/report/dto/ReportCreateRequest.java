@@ -17,8 +17,7 @@ import java.util.List;
 /**
  * 제보 생성 요청 (multipart/form-data).
  *
- * <p>[S3 배포 시] 이 DTO는 변경하지 않는다.
- * images 필드·multipart 바인딩·Swagger {@code @ArraySchema} 설정은 Local/S3 공통으로 유지한다.
+ * <p>images 필드·multipart 바인딩·Swagger {@code @ArraySchema} 설정은 API 계약상 유지한다.
  */
 @Getter
 @Setter
@@ -40,7 +39,7 @@ public class ReportCreateRequest {
 
     /**
      * 첨부 이미지 (최대 3장, 선택, 파일당 10MB 이하).
-     * [S3 배포 시] 필드 타입·part name(images)·검증 위치(ReportService) 변경 없음.
+     * multipart part name: images. 검증은 ReportService에서 수행한다.
      */
     @ArraySchema(
             schema = @Schema(type = "string", format = "binary"),

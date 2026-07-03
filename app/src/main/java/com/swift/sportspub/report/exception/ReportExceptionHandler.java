@@ -1,7 +1,8 @@
 package com.swift.sportspub.report.exception;
 
+import com.swift.sportspub.common.exception.BusinessException;
+import com.swift.sportspub.common.response.ApiResponse;
 import com.swift.sportspub.report.controller.ReportController;
-import com.swift.sportspub.report.dto.ReportErrorResponse;
 import com.swift.sportspub.report.entity.ReportCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
@@ -20,55 +21,71 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 public class ReportExceptionHandler {
 
     @ExceptionHandler(ReportException.class)
-    public ResponseEntity<ReportErrorResponse> handleReport(ReportException e) {
+    public ResponseEntity<ApiResponse<Void>> handleReport(ReportException e) {
         log.warn("Report exception: {}", e.getMessage());
         return ResponseEntity
                 .status(e.getErrorCode().getStatus())
-                .body(ReportErrorResponse.of(e.getErrorCode(), e.getMessage()));
+                .body(toFailResponse(e.getErrorCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException e) {
+        log.warn("Report business exception: {}", e.getMessage());
+        return ResponseEntity
+                .status(e.getErrorCode().getStatus())
+                .body(ApiResponse.fail(e.getErrorCode(), e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ReportErrorResponse> handleValidation(MethodArgumentNotValidException e) {
+    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
         if (fieldError == null) {
             return ResponseEntity
                     .badRequest()
-                    .body(ReportErrorResponse.of(ReportErrorCode.INVALID_REPORT_CATEGORY));
+                    .body(toFailResponse(ReportErrorCode.INVALID_REPORT_CATEGORY));
         }
 
         ReportErrorCode errorCode = mapValidationError(fieldError);
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ReportErrorResponse.of(errorCode, fieldError.getDefaultMessage()));
+                .body(toFailResponse(errorCode, fieldError.getDefaultMessage()));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ReportErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         if (e.getRequiredType() == ReportCategory.class) {
             return ResponseEntity
                     .badRequest()
-                    .body(ReportErrorResponse.of(ReportErrorCode.INVALID_REPORT_CATEGORY));
+                    .body(toFailResponse(ReportErrorCode.INVALID_REPORT_CATEGORY));
         }
 
         return ResponseEntity
                 .badRequest()
-                .body(ReportErrorResponse.of(ReportErrorCode.INVALID_REPORT_CATEGORY));
+                .body(toFailResponse(ReportErrorCode.INVALID_REPORT_CATEGORY));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ReportErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException e) {
         log.warn("Report image size exceeded servlet limit: {}", e.getMessage());
         return ResponseEntity
                 .badRequest()
-                .body(ReportErrorResponse.of(ReportErrorCode.REPORT_IMAGE_SIZE_EXCEEDED));
+                .body(toFailResponse(ReportErrorCode.REPORT_IMAGE_SIZE_EXCEEDED));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ReportErrorResponse> handleUnknown(Exception e) {
+    public ResponseEntity<ApiResponse<Void>> handleUnknown(Exception e) {
         log.error("Unhandled report API exception", e);
         return ResponseEntity
                 .status(ReportErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-                .body(ReportErrorResponse.of(ReportErrorCode.INTERNAL_SERVER_ERROR));
+                .body(toFailResponse(ReportErrorCode.INTERNAL_SERVER_ERROR));
+    }
+
+    private ApiResponse<Void> toFailResponse(ReportErrorCode errorCode) {
+        return ApiResponse.fail(errorCode.getCode(), errorCode.getMessage());
+    }
+
+    private ApiResponse<Void> toFailResponse(ReportErrorCode errorCode, String message) {
+        return ApiResponse.fail(errorCode.getCode(), message);
     }
 
     private ReportErrorCode mapValidationError(FieldError fieldError) {

@@ -10,7 +10,13 @@ import java.util.List;
 
 public interface UserFavoriteTeamRepository extends JpaRepository<UserFavoriteTeam, Long> {
 
-    List<UserFavoriteTeam> findByUserUserIdOrderByCreatedAtAsc(Long userId);
+    @Query("""
+            SELECT uft FROM UserFavoriteTeam uft
+            JOIN FETCH uft.team
+            WHERE uft.user.userId = :userId
+            ORDER BY uft.createdAt ASC
+            """)
+    List<UserFavoriteTeam> findByUserUserIdOrderByCreatedAtAsc(@Param("userId") Long userId);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from UserFavoriteTeam uft where uft.user.userId = :userId")

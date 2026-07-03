@@ -58,12 +58,6 @@ class FavoriteServiceTest {
                 .oauthProvider(OAuthProvider.KAKAO)
                 .oauthId("oauth-1")
                 .build();
-        Favorite favorite = Favorite.builder()
-                .user(user)
-                .pubId(12L)
-                .build();
-        ReflectionTestUtils.setField(favorite, "favoriteId", 1L);
-
         Pub pub = Pub.builder()
                 .name("시그니처 펍")
                 .address("서울 마포구")
@@ -74,6 +68,13 @@ class FavoriteServiceTest {
                 .build();
         ReflectionTestUtils.setField(pub, "pubId", 12L);
         ReflectionTestUtils.setField(pub, "subRegion", SubRegion.HONGDAE_HAPJEONG);
+
+        Favorite favorite = Favorite.builder()
+                .user(user)
+                .pub(pub)
+                .build();
+        ReflectionTestUtils.setField(favorite, "favoriteId", 1L);
+        ReflectionTestUtils.setField(favorite, "pubId", 12L);
 
         PubImage image = PubImage.builder()
                 .pubId(12L)
@@ -98,18 +99,63 @@ class FavoriteServiceTest {
     }
 
     @Test
+    void getMyFavorites_whenPubSoftDeleted_returnsPubIdWithNullDetails() {
+        User user = User.builder()
+                .oauthProvider(OAuthProvider.KAKAO)
+                .oauthId("oauth-1")
+                .build();
+        Favorite favorite = Favorite.builder()
+                .user(user)
+                .pub(Pub.builder()
+                        .name("삭제된 펍")
+                        .address("서울")
+                        .region(Region.MAPO)
+                        .latitude(new BigDecimal("37.5563000"))
+                        .longitude(new BigDecimal("126.9226000"))
+                        .status(PubStatus.OPEN)
+                        .build())
+                .build();
+        ReflectionTestUtils.setField(favorite, "favoriteId", 1L);
+        ReflectionTestUtils.setField(favorite, "pubId", 12L);
+
+        given(favoriteRepository.findTop30ByUserUserIdOrderByCreatedAtDesc(1L))
+                .willReturn(List.of(favorite));
+        given(pubRepository.findAllById(List.of(12L))).willReturn(List.of());
+        given(pubImageRepository.findAllByPubIdInOrderByPubIdAscDisplayOrderAsc(List.of(12L)))
+                .willReturn(List.of());
+
+        FavoriteListResponse response = favoriteService.getMyFavorites(1L);
+
+        assertThat(response.favorites()).hasSize(1);
+        assertThat(response.favorites().get(0).pubId()).isEqualTo(12L);
+        assertThat(response.favorites().get(0).pubName()).isNull();
+        assertThat(response.favorites().get(0).region()).isNull();
+        assertThat(response.favorites().get(0).thumbnailImageUrl()).isNull();
+    }
+
+    @Test
     void addFavorite_success() {
         User user = User.builder()
                 .oauthProvider(OAuthProvider.KAKAO)
                 .oauthId("oauth-1")
                 .build();
+        Pub pub = Pub.builder()
+                .name("테스트 펍")
+                .address("서울")
+                .region(Region.MAPO)
+                .latitude(new BigDecimal("37.5563000"))
+                .longitude(new BigDecimal("126.9226000"))
+                .status(PubStatus.OPEN)
+                .build();
+        ReflectionTestUtils.setField(pub, "pubId", 10L);
+
         given(userService.getUser(1L)).willReturn(user);
-        given(favoriteRepository.existsActivePub(10L)).willReturn(true);
-        given(favoriteRepository.existsByUserUserIdAndPubId(1L, 10L)).willReturn(false);
+        given(pubRepository.findById(10L)).willReturn(java.util.Optional.of(pub));
+        given(favoriteRepository.existsByUserUserIdAndPubPubId(1L, 10L)).willReturn(false);
         given(favoriteRepository.countByUserUserId(1L)).willReturn(0L);
         Favorite saved = Favorite.builder()
                 .user(user)
-                .pubId(10L)
+                .pub(pub)
                 .build();
         ReflectionTestUtils.setField(saved, "favoriteId", 42L);
         given(favoriteRepository.save(any())).willReturn(saved);
@@ -140,7 +186,7 @@ class FavoriteServiceTest {
                 .oauthProvider(OAuthProvider.KAKAO)
                 .oauthId("oauth-1")
                 .build());
-        given(favoriteRepository.existsActivePub(10L)).willReturn(false);
+        given(pubRepository.findById(10L)).willReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> favoriteService.addFavorite(1L, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -154,12 +200,22 @@ class FavoriteServiceTest {
 
     @Test
     void addFavorite_duplicate() {
+        Pub pub = Pub.builder()
+                .name("테스트 펍")
+                .address("서울")
+                .region(Region.MAPO)
+                .latitude(new BigDecimal("37.5563000"))
+                .longitude(new BigDecimal("126.9226000"))
+                .status(PubStatus.OPEN)
+                .build();
+        ReflectionTestUtils.setField(pub, "pubId", 10L);
+
         given(userService.getUser(1L)).willReturn(User.builder()
                 .oauthProvider(OAuthProvider.KAKAO)
                 .oauthId("oauth-1")
                 .build());
-        given(favoriteRepository.existsActivePub(10L)).willReturn(true);
-        given(favoriteRepository.existsByUserUserIdAndPubId(1L, 10L)).willReturn(true);
+        given(pubRepository.findById(10L)).willReturn(java.util.Optional.of(pub));
+        given(favoriteRepository.existsByUserUserIdAndPubPubId(1L, 10L)).willReturn(true);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(1L, 10L))
                 .isInstanceOf(BusinessException.class)
@@ -173,12 +229,22 @@ class FavoriteServiceTest {
 
     @Test
     void addFavorite_exceedsLimit() {
+        Pub pub = Pub.builder()
+                .name("테스트 펍")
+                .address("서울")
+                .region(Region.MAPO)
+                .latitude(new BigDecimal("37.5563000"))
+                .longitude(new BigDecimal("126.9226000"))
+                .status(PubStatus.OPEN)
+                .build();
+        ReflectionTestUtils.setField(pub, "pubId", 10L);
+
         given(userService.getUser(1L)).willReturn(User.builder()
                 .oauthProvider(OAuthProvider.KAKAO)
                 .oauthId("oauth-1")
                 .build());
-        given(favoriteRepository.existsActivePub(10L)).willReturn(true);
-        given(favoriteRepository.existsByUserUserIdAndPubId(1L, 10L)).willReturn(false);
+        given(pubRepository.findById(10L)).willReturn(java.util.Optional.of(pub));
+        given(favoriteRepository.existsByUserUserIdAndPubPubId(1L, 10L)).willReturn(false);
         given(favoriteRepository.countByUserUserId(1L)).willReturn(30L);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(1L, 10L))

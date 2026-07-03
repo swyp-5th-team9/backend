@@ -74,6 +74,7 @@ class FavoriteControllerTest {
         mockMvc.perform(post("/api/v1/favorites/{pubId}", 10L))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("CONFLICT"))
                 .andExpect(jsonPath("$.message").value("이미 즐겨찾기한 pub입니다."));
     }
 
@@ -84,6 +85,7 @@ class FavoriteControllerTest {
 
         mockMvc.perform(post("/api/v1/favorites/{pubId}", 99L))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
     }
 }

@@ -1,6 +1,7 @@
 package com.swift.sportspub.favorite.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.favorite.dto.FavoriteDeleteRequest;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Favorite", description = "즐겨찾기 API")
+@DocCommonErrorResponses
 @RestController
 @RequestMapping("/api/v1/favorites")
 @RequiredArgsConstructor
@@ -33,6 +35,7 @@ public class FavoriteController {
                     createdAt 내림차순으로 정렬하며 최대 30개까지 반환한다.
                     즐겨찾기가 없으면 빈 배열을 반환한다.
                     pubName, region, thumbnailImageUrl은 연결된 활성 Pub 정보를 기준으로 반환한다.
+                    soft-delete된 Pub은 pubId만 반환하고 상세 필드는 null이다.
                     """
     )
     @DocResponses({
@@ -61,6 +64,9 @@ public class FavoriteController {
             @DocResponse(responseCode = "404", description = "존재하지 않거나 삭제할 수 없는 즐겨찾기 포함"),
             @DocResponse(responseCode = "500", description = "서버 오류")
     })
+    /*
+     * Android 클라이언트 구현 및 RequestBody 일괄 삭제 호환성을 위해 POST /favorites/delete를 유지한다.
+     */
     @PostMapping("/delete")
     public ApiResponse<Void> deleteFavorites(
             @AuthenticationPrincipal Long userId,
