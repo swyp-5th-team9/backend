@@ -99,6 +99,41 @@ class FavoriteServiceTest {
     }
 
     @Test
+    void getMyFavorites_whenPubSoftDeleted_returnsPubIdWithNullDetails() {
+        User user = User.builder()
+                .oauthProvider(OAuthProvider.KAKAO)
+                .oauthId("oauth-1")
+                .build();
+        Favorite favorite = Favorite.builder()
+                .user(user)
+                .pub(Pub.builder()
+                        .name("삭제된 펍")
+                        .address("서울")
+                        .region(Region.MAPO)
+                        .latitude(new BigDecimal("37.5563000"))
+                        .longitude(new BigDecimal("126.9226000"))
+                        .status(PubStatus.OPEN)
+                        .build())
+                .build();
+        ReflectionTestUtils.setField(favorite, "favoriteId", 1L);
+        ReflectionTestUtils.setField(favorite, "pubId", 12L);
+
+        given(favoriteRepository.findTop30ByUserUserIdOrderByCreatedAtDesc(1L))
+                .willReturn(List.of(favorite));
+        given(pubRepository.findAllById(List.of(12L))).willReturn(List.of());
+        given(pubImageRepository.findAllByPubIdInOrderByPubIdAscDisplayOrderAsc(List.of(12L)))
+                .willReturn(List.of());
+
+        FavoriteListResponse response = favoriteService.getMyFavorites(1L);
+
+        assertThat(response.favorites()).hasSize(1);
+        assertThat(response.favorites().get(0).pubId()).isEqualTo(12L);
+        assertThat(response.favorites().get(0).pubName()).isNull();
+        assertThat(response.favorites().get(0).region()).isNull();
+        assertThat(response.favorites().get(0).thumbnailImageUrl()).isNull();
+    }
+
+    @Test
     void addFavorite_success() {
         User user = User.builder()
                 .oauthProvider(OAuthProvider.KAKAO)

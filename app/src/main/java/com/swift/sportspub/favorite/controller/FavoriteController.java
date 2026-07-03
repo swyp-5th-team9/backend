@@ -35,6 +35,7 @@ public class FavoriteController {
                     createdAt 내림차순으로 정렬하며 최대 30개까지 반환한다.
                     즐겨찾기가 없으면 빈 배열을 반환한다.
                     pubName, region, thumbnailImageUrl은 연결된 활성 Pub 정보를 기준으로 반환한다.
+                    soft-delete된 Pub은 pubId만 반환하고 상세 필드는 null이다.
                     """
     )
     @DocResponses({

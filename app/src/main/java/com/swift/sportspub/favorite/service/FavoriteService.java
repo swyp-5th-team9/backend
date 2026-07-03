@@ -44,10 +44,12 @@ public class FavoriteService {
             return FavoriteListResponse.of(List.of());
         }
 
+        // favorite.getPub() lazy load는 Pub @SQLRestriction(soft-delete) 때문에 실패할 수 있어 pubId 미러만 사용한다.
         List<Long> pubIds = favorites.stream()
                 .map(Favorite::getPubId)
                 .toList();
 
+        // soft-deleted pub는 findAllById 결과에서 제외 → toFavoriteItemResponse에서 상세 필드 null 처리
         Map<Long, Pub> pubById = pubRepository.findAllById(pubIds).stream()
                 .collect(Collectors.toMap(Pub::getPubId, Function.identity()));
 
