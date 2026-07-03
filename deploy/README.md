@@ -2,6 +2,8 @@
 
 EC2 (Ubuntu 22.04) + RDS (PostgreSQL 16) + Nginx + DuckDNS + Let's Encrypt 기준.
 
+> 크롤러(KBO 스케줄 동기화) 는 EC2 상주 대신 GitHub Actions cron 로 실행합니다 → [crawler-cron.md](./crawler-cron.md)
+
 ## 사전 준비
 - AWS 계정 (EC2 t2.micro 프리티어 가능, RDS는 db.t4g.micro)
 - DuckDNS 서브도메인 + 토큰 (`https://www.duckdns.org`)
