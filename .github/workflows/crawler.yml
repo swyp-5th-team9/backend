@@ -1,0 +1,125 @@
+name: KBO Crawler (daily sync)
+
+on:
+  schedule:
+    # 매일 KST 02:00 = UTC 17:00
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: crawler-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync current + next month
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Get runner public IP
+        id: runner-ip
+        run: echo "ip=$(curl -s https://checkip.amazonaws.com)" >> "$GITHUB_OUTPUT"
+
+      - name: Whitelist runner IP in SG
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.runner-ip.outputs.ip }}/32
+
+      - name: Write SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2.pem
+          chmod 600 ~/.ssh/ec2.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Open SSH tunnel to RDS (via EC2 bastion)
+        run: |
+          ssh -i ~/.ssh/ec2.pem \
+            -o ExitOnForwardFailure=yes \
+            -o ServerAliveInterval=30 \
+            -f -N \
+            -L 15432:${{ secrets.RDS_HOST }}:5432 \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}
+          sleep 2
+          nc -z localhost 15432
+
+      - name: Run crawler (local profile → immediate sync)
+        env:
+          SPRING_PROFILES_ACTIVE: local
+          DB_URL: jdbc:postgresql://localhost:15432/moball_db
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -o pipefail
+          LOG=/tmp/crawler.log
+          ./gradlew :crawler:bootRun --no-daemon > "$LOG" 2>&1 &
+          GRADLE_PID=$!
+
+          # 동기화 완료 로그 2회(당월 + 익월) 대기, 최대 10분
+          for i in $(seq 1 120); do
+            if [ "$(grep -c '동기화 완료' "$LOG" 2>/dev/null || echo 0)" -ge 2 ]; then
+              echo "sync finished"
+              break
+            fi
+            if ! kill -0 "$GRADLE_PID" 2>/dev/null; then
+              echo "gradle process exited unexpectedly"
+              tail -n 200 "$LOG"
+              exit 1
+            fi
+            sleep 5
+          done
+
+          # 프로세스 종료 (crawler 는 스케줄 대기로 계속 살아있음)
+          pkill -TERM -P "$GRADLE_PID" 2>/dev/null || true
+          kill -TERM "$GRADLE_PID" 2>/dev/null || true
+          sleep 3
+          pkill -KILL -P "$GRADLE_PID" 2>/dev/null || true
+          kill -KILL "$GRADLE_PID" 2>/dev/null || true
+
+          echo "=== crawler log tail ==="
+          tail -n 50 "$LOG"
+
+          if [ "$(grep -c '동기화 완료' "$LOG" 2>/dev/null || echo 0)" -lt 2 ]; then
+            echo "sync did not complete within timeout"
+            exit 1
+          fi
+
+      - name: Close SSH tunnel
+        if: always()
+        run: |
+          pkill -f "ssh.*15432:${{ secrets.RDS_HOST }}" || true
+
+      - name: Revoke runner IP from SG
+        if: always() && steps.runner-ip.outputs.ip != ''
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.runner-ip.outputs.ip }}/32
