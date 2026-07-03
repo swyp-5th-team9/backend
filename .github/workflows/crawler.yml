@@ -72,7 +72,7 @@ jobs:
       - name: Run crawler (local profile → immediate sync)
         env:
           SPRING_PROFILES_ACTIVE: local
-          DB_URL: jdbc:postgresql://localhost:15432/moball_db
+          DB_URL: jdbc:postgresql://localhost:15432/sportspub_db
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
