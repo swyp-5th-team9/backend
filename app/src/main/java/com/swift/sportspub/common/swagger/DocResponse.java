@@ -1,5 +1,7 @@
 package com.swift.sportspub.common.swagger;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.core.annotation.AliasFor;
 
@@ -24,4 +26,7 @@ public @interface DocResponse {
 
     @AliasFor(annotation = ApiResponse.class, attribute = "description")
     String description();
+
+    @AliasFor(annotation = ApiResponse.class, attribute = "content")
+    Content[] content() default {};
 }

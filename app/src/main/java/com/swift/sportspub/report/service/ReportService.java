@@ -28,6 +28,9 @@ import java.util.Set;
  * 제보 등록 서비스.
  *
  * <p>Controller, {@link ReportCreateRequest}, {@code createReport(userId, request)} 시그니처는 변경하지 않는다.
+ *
+ * <p>TODO(#60 보류): S3 업로드가 {@code @Transactional} 내부에서 실행된다.
+ * DB 저장 실패 시 트랜잭션 롤백 후에도 S3 객체가 남을 수 있다. {@link ReportS3StorageService} Javadoc 참고.
  */
 @Service
 @RequiredArgsConstructor
@@ -70,6 +73,7 @@ public class ReportService {
         );
 
         for (MultipartFile image : images) {
+            // S3 업로드는 트랜잭션 안에서 실행됨 — orphan 파일 위험은 ReportS3StorageService/ReportService Javadoc TODO 참고
             String imageUrl = reportS3StorageService.upload(image);
             reportImageRepository.save(
                     ReportImage.builder()

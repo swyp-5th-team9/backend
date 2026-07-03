@@ -22,6 +22,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.userId = :userId AND u.deletedAt IS NULL")
     Optional<User> findActiveById(@Param("userId") Long userId);
 
+    /*
+     * JWT 필터 등 활성 회원 여부만 빠르게 확인할 때 사용한다.
+     * 탈퇴(soft delete) 회원의 AccessToken은 인증 컨텍스트에 올리지 않는다. (#60)
+     */
+    boolean existsByUserIdAndDeletedAtIsNull(Long userId);
+
     @Query("""
             SELECT u FROM User u
             WHERE u.oauthProvider = :oauthProvider

@@ -44,10 +44,12 @@ public class FavoriteService {
             return FavoriteListResponse.of(List.of());
         }
 
+        // favorite.getPub() lazy load는 Pub @SQLRestriction(soft-delete) 때문에 실패할 수 있어 pubId 미러만 사용한다.
         List<Long> pubIds = favorites.stream()
                 .map(Favorite::getPubId)
                 .toList();
 
+        // soft-deleted pub는 findAllById 결과에서 제외 → toFavoriteItemResponse에서 상세 필드 null 처리
         Map<Long, Pub> pubById = pubRepository.findAllById(pubIds).stream()
                 .collect(Collectors.toMap(Pub::getPubId, Function.identity()));
 
@@ -93,23 +95,18 @@ public class FavoriteService {
     public Long addFavorite(Long userId, Long pubId) {
         User user = userService.getUser(userId);
 
-        validatePubExists(pubId);
+        Pub pub = pubRepository.findById(pubId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다."));
         validateNotDuplicate(userId, pubId);
         validateFavoriteLimit(userId);
 
         Favorite saved = favoriteRepository.save(
                 Favorite.builder()
                         .user(user)
-                        .pubId(pubId)
+                        .pub(pub)
                         .build()
         );
         return saved.getFavoriteId();
-    }
-
-    private void validatePubExists(Long pubId) {
-        if (!favoriteRepository.existsActivePub(pubId)) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다.");
-        }
     }
 
     private void validateFavoriteLimit(Long userId) {
@@ -119,7 +116,7 @@ public class FavoriteService {
     }
 
     private void validateNotDuplicate(Long userId, Long pubId) {
-        if (favoriteRepository.existsByUserUserIdAndPubId(userId, pubId)) {
+        if (favoriteRepository.existsByUserUserIdAndPubPubId(userId, pubId)) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 즐겨찾기한 pub입니다.");
         }
     }

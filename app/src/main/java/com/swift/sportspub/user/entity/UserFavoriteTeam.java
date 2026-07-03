@@ -1,5 +1,6 @@
 package com.swift.sportspub.user.entity;
 
+import com.swift.sportspub.team.entity.Team;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -42,17 +43,21 @@ public class UserFavoriteTeam {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // TODO: @ManyToOne Team 연관관계 전환 검토 (전환 시 N+1 방지 fetch join 함께 검토)
-    @Column(name = "team_id", nullable = false)
-    private Long teamId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "team_id", nullable = false)
+    private Team team;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    private UserFavoriteTeam(User user, Long teamId) {
+    private UserFavoriteTeam(User user, Team team) {
         this.user = user;
-        this.teamId = teamId;
+        this.team = team;
+    }
+
+    public Long getTeamId() {
+        return team.getTeamId();
     }
 }

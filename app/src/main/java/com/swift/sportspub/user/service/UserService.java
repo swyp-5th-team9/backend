@@ -66,6 +66,10 @@ public class UserService {
     @Transactional
     public void onboarding(Long userId, OnboardingRequest request) {
         User user = getUser(userId);
+        // #60: 온보딩은 1회만 허용. 재호출 시 프로필·선호 구단이 덮어쓰이는 것을 방지한다.
+        if (user.isOnboardingCompleted()) {
+            throw new BusinessException(ErrorCode.CONFLICT, "이미 온보딩이 완료된 사용자입니다.");
+        }
         user.completeOnboarding(request.nickname());
         replaceFavoriteTeams(user, request.teamIds());
     }
@@ -107,12 +111,12 @@ public class UserService {
         }
 
         List<Long> distinctTeamIds = new ArrayList<>(new LinkedHashSet<>(teamIds));
-        validateTeamIdsExist(distinctTeamIds);
+        Map<Long, Team> teamById = validateTeamIdsExist(distinctTeamIds);
 
         List<UserFavoriteTeam> favoriteTeams = distinctTeamIds.stream()
                 .map(teamId -> UserFavoriteTeam.builder()
                         .user(user)
-                        .teamId(teamId)
+                        .team(teamById.get(teamId))
                         .build())
                 .toList();
 
@@ -120,13 +124,16 @@ public class UserService {
         userFavoriteTeamRepository.saveAll(favoriteTeams);
     }
 
-    private void validateTeamIdsExist(List<Long> teamIds) {
+    private Map<Long, Team> validateTeamIdsExist(List<Long> teamIds) {
         if (teamIds.isEmpty()) {
-            return;
+            return Map.of();
         }
-        if (teamRepository.findAllById(teamIds).size() != teamIds.size()) {
+        Map<Long, Team> teamById = teamRepository.findAllById(teamIds).stream()
+                .collect(Collectors.toMap(Team::getTeamId, Function.identity()));
+        if (teamById.size() != teamIds.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 teamId가 포함되어 있습니다.");
         }
+        return teamById;
     }
 
     private UserResponse toUserResponse(User user) {
@@ -149,18 +156,11 @@ public class UserService {
             return List.of();
         }
 
-        List<Long> teamIds = favoriteTeams.stream()
-                .map(UserFavoriteTeam::getTeamId)
-                .toList();
-
-        Map<Long, Team> teamById = teamRepository.findAllById(teamIds).stream()
-                .collect(Collectors.toMap(Team::getTeamId, Function.identity()));
-
         return favoriteTeams.stream()
-                .map(favoriteTeam -> {
-                    Team team = teamById.get(favoriteTeam.getTeamId());
-                    return new FavoriteTeamResponse(favoriteTeam.getTeamId(), team.getShortName());
-                })
+                .map(favoriteTeam -> new FavoriteTeamResponse(
+                        favoriteTeam.getTeamId(),
+                        favoriteTeam.getTeam().getShortName()
+                ))
                 .toList();
     }
 }

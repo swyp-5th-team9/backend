@@ -8,15 +8,10 @@ import org.springframework.stereotype.Component;
 /**
  * S3 연결 설정 ({@code app.s3.*}).
  *
- * <p>로컬 개발 시 값이 비어 있어도 앱 기동에 영향 없음 ({@link S3Config} 비활성화 상태).
+ * <p>설정 키: {@code app.s3.bucket}, {@code app.s3.region}, {@code app.s3.access-key}, {@code app.s3.secret-key}
+ * (로컬은 {@code application-local.yml} / {@code S3_BUCKET}, {@code AWS_REGION} 등 환경 변수 매핑)
  *
- * <p>[S3 배포 시] {@code .env} 또는 배포 환경에 아래 값을 설정한다.
- * <ul>
- *   <li>{@code S3_BUCKET} → bucket</li>
- *   <li>{@code AWS_REGION} → region (기본 ap-northeast-2)</li>
- *   <li>{@code AWS_ACCESS_KEY_ID} → accessKey</li>
- *   <li>{@code AWS_SECRET_ACCESS_KEY} → secretKey</li>
- * </ul>
+ * <p>버킷 퍼블릭 read 등 운영 설정은 {@link com.swift.sportspub.report.storage.ReportS3StorageService} Javadoc 참고.
  */
 @Getter
 @Setter

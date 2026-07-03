@@ -5,6 +5,7 @@ import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.dto.WithdrawRequest;
 import com.swift.sportspub.user.service.UserService;
+import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "User", description = "회원 API")
+@DocCommonErrorResponses
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class UserController {
                     teamIds를 전달하면 선호 구단으로 저장하며, 최대 3개까지 선택할 수 있다.
                     teamIds를 생략하거나 빈 배열([])을 전달하면 선호 구단 없이 온보딩을 완료한다.
                     존재하지 않는 teamId는 400으로 반환한다.
+                    이미 온보딩을 완료한 사용자가 다시 호출하면 409로 반환한다.
                     """
     )
     @ApiResponses({
@@ -43,6 +46,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "입력값 오류 또는 존재하지 않는 teamId"),
             @ApiResponse(responseCode = "401", description = "인증 필요"),
             @ApiResponse(responseCode = "404", description = "사용자 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 온보딩 완료"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/me/onboarding")

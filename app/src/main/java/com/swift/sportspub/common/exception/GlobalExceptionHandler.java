@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
         log.warn("Business exception: {}", e.getMessage());
         return ResponseEntity
                 .status(e.getErrorCode().getStatus())
-                .body(ApiResponse.fail(e.getMessage()));
+                .body(ApiResponse.fail(e.getErrorCode(), e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
                 .orElse(ErrorCode.INVALID_INPUT.getDefaultMessage());
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
-                .body(ApiResponse.fail(message));
+                .body(ApiResponse.fail(ErrorCode.INVALID_INPUT, message));
     }
 
     @ExceptionHandler(Exception.class)
@@ -35,6 +35,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception", e);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_ERROR.getStatus())
-                .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR.getDefaultMessage()));
+                .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR));
     }
 }
