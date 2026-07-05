@@ -70,6 +70,11 @@ app:
     refresh-ttl-seconds: 1209600
   deeplink:
     scheme: sportspub://auth/callback
+  s3:
+    bucket: ${S3_BUCKET}
+    region: ${AWS_REGION}
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
   slack:
     report-webhook-url: ${SLACK_REPORT_WEBHOOK_URL:}
 
