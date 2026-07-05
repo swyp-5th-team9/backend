@@ -12,6 +12,7 @@ import com.swift.sportspub.pub.dto.PubListResponse;
 import com.swift.sportspub.pub.dto.PubListSearchCondition;
 import com.swift.sportspub.pub.dto.PubMapMarker;
 import com.swift.sportspub.pub.dto.PubMapResponse;
+import com.swift.sportspub.pub.dto.PubMapSearchCondition;
 import com.swift.sportspub.pub.dto.PubSummary;
 import com.swift.sportspub.pub.dto.SupportedTeamDetail;
 import com.swift.sportspub.pub.dto.SupportedTeamSummary;
@@ -37,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,18 +60,48 @@ public class PubQueryService {
     private final MenuRepository menuRepository;
 
     @Transactional(readOnly = true)
-    public PubMapResponse findMapMarkers(BigDecimal swLat, BigDecimal swLng,
-                                         BigDecimal neLat, BigDecimal neLng,
-                                         Long teamId) {
-        if (swLat == null || swLng == null || neLat == null || neLng == null) {
+    public PubMapResponse findMapMarkers(PubMapSearchCondition condition) {
+        if (condition.swLat() == null || condition.swLng() == null
+                || condition.neLat() == null || condition.neLng() == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        if (swLat.compareTo(neLat) > 0 || swLng.compareTo(neLng) > 0) {
+        if (condition.swLat().compareTo(condition.neLat()) > 0
+                || condition.swLng().compareTo(condition.neLng()) > 0) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
-        List<PubMapMarker> markers = pubRepository
-                .findMarkersInBoundingBox(swLat, swLng, neLat, neLng, teamId);
+        List<Long> pubIds = pubRepository.searchMapPubIds(condition);
+        if (pubIds.isEmpty()) {
+            return PubMapResponse.of(List.of());
+        }
+
+        Map<Long, Pub> pubById = new HashMap<>();
+        for (Pub pub : pubRepository.findAllById(pubIds)) {
+            pubById.put(pub.getPubId(), pub);
+        }
+        PubChildAggregates children = loadChildAggregates(pubIds);
+
+        List<PubMapMarker> markers = new ArrayList<>(pubIds.size());
+        for (Long pubId : pubIds) {
+            Pub pub = pubById.get(pubId);
+            if (pub == null) {
+                continue;
+            }
+            markers.add(new PubMapMarker(
+                    pub.getPubId(),
+                    pub.getName(),
+                    pub.getLatitude(),
+                    pub.getLongitude(),
+                    pub.getStatus(),
+                    pub.getFavoriteCount(),
+                    children.thumbnails().get(pubId),
+                    children.supportedTeams().getOrDefault(pubId, List.of()),
+                    children.facilities().getOrDefault(pubId, List.of()),
+                    children.styles().getOrDefault(pubId, List.of()),
+                    children.themes().getOrDefault(pubId, List.of()),
+                    children.foods().getOrDefault(pubId, List.of())
+            ));
+        }
         return PubMapResponse.of(markers);
     }
 
@@ -88,35 +118,7 @@ public class PubQueryService {
         for (Pub pub : pubRepository.findAllById(pubIds)) {
             pubById.put(pub.getPubId(), pub);
         }
-
-        Map<Long, String> thumbnailByPubId = new HashMap<>();
-        for (PubImage image : pubImageRepository.findAllByPubIdInOrderByPubIdAscDisplayOrderAsc(pubIds)) {
-            thumbnailByPubId.putIfAbsent(image.getPubId(), image.getImageUrl());
-        }
-
-        Map<Long, List<SupportedTeamSummary>> supportedTeamsByPubId = new HashMap<>();
-        for (SupportedTeamRow row : pubSupportedTeamRepository.findAllRowsByPubIdIn(pubIds)) {
-            supportedTeamsByPubId
-                    .computeIfAbsent(row.getPubId(), k -> new ArrayList<>())
-                    .add(new SupportedTeamSummary(row.getTeamId(), row.getShortName()));
-        }
-
-        Map<Long, List<String>> facilitiesByPubId = groupCodes(
-                pubFacilityRepository.findAllByPubIdIn(pubIds),
-                PubFacility::getPubId,
-                pf -> pf.getFacilityCode().name());
-        Map<Long, List<String>> stylesByPubId = groupCodes(
-                pubStyleRepository.findAllByPubIdIn(pubIds),
-                PubStyle::getPubId,
-                ps -> ps.getStyleCode().name());
-        Map<Long, List<String>> themesByPubId = groupCodes(
-                pubThemeRepository.findAllByPubIdIn(pubIds),
-                PubTheme::getPubId,
-                pt -> pt.getThemeCode().name());
-        Map<Long, List<String>> foodsByPubId = groupCodes(
-                pubFoodTagRepository.findAllByPubIdIn(pubIds),
-                PubFoodTag::getPubId,
-                pft -> pft.getFoodCode().name());
+        PubChildAggregates children = loadChildAggregates(pubIds);
 
         Map<Long, List<PubBusinessHours>> hoursByPubId = new HashMap<>();
         for (PubBusinessHours h : pubBusinessHoursRepository.findAllByPubIdIn(pubIds)) {
@@ -137,14 +139,14 @@ public class PubQueryService {
                     pub.getName(),
                     pub.getRegion(),
                     pub.getAddress(),
-                    thumbnailByPubId.get(pubId),
+                    children.thumbnails().get(pubId),
                     pub.getFavoriteCount(),
                     status,
-                    supportedTeamsByPubId.getOrDefault(pubId, List.of()),
-                    facilitiesByPubId.getOrDefault(pubId, List.of()),
-                    stylesByPubId.getOrDefault(pubId, List.of()),
-                    themesByPubId.getOrDefault(pubId, List.of()),
-                    foodsByPubId.getOrDefault(pubId, List.of())
+                    children.supportedTeams().getOrDefault(pubId, List.of()),
+                    children.facilities().getOrDefault(pubId, List.of()),
+                    children.styles().getOrDefault(pubId, List.of()),
+                    children.themes().getOrDefault(pubId, List.of()),
+                    children.foods().getOrDefault(pubId, List.of())
             ));
         }
         return PubListResponse.of(content, condition.page(), condition.size(), idPage.totalElements());
@@ -247,6 +249,42 @@ public class PubQueryService {
         return summaries;
     }
 
+    private PubChildAggregates loadChildAggregates(List<Long> pubIds) {
+        Map<Long, String> thumbnailByPubId = new HashMap<>();
+        for (PubImage image : pubImageRepository.findAllByPubIdInOrderByPubIdAscDisplayOrderAsc(pubIds)) {
+            thumbnailByPubId.putIfAbsent(image.getPubId(), image.getImageUrl());
+        }
+
+        Map<Long, List<SupportedTeamSummary>> supportedTeamsByPubId = new HashMap<>();
+        for (SupportedTeamRow row : pubSupportedTeamRepository.findAllRowsByPubIdIn(pubIds)) {
+            supportedTeamsByPubId
+                    .computeIfAbsent(row.getPubId(), k -> new ArrayList<>())
+                    .add(new SupportedTeamSummary(row.getTeamId(), row.getShortName()));
+        }
+
+        Map<Long, List<String>> facilitiesByPubId = groupCodes(
+                pubFacilityRepository.findAllByPubIdIn(pubIds),
+                PubFacility::getPubId,
+                pf -> pf.getFacilityCode().name());
+        Map<Long, List<String>> stylesByPubId = groupCodes(
+                pubStyleRepository.findAllByPubIdIn(pubIds),
+                PubStyle::getPubId,
+                ps -> ps.getStyleCode().name());
+        Map<Long, List<String>> themesByPubId = groupCodes(
+                pubThemeRepository.findAllByPubIdIn(pubIds),
+                PubTheme::getPubId,
+                pt -> pt.getThemeCode().name());
+        Map<Long, List<String>> foodsByPubId = groupCodes(
+                pubFoodTagRepository.findAllByPubIdIn(pubIds),
+                PubFoodTag::getPubId,
+                pft -> pft.getFoodCode().name());
+
+        return new PubChildAggregates(
+                thumbnailByPubId, supportedTeamsByPubId,
+                facilitiesByPubId, stylesByPubId, themesByPubId, foodsByPubId
+        );
+    }
+
     private <T> Map<Long, List<String>> groupCodes(List<T> rows,
                                                    java.util.function.Function<T, Long> keyFn,
                                                    java.util.function.Function<T, String> valueFn) {
@@ -255,5 +293,15 @@ public class PubQueryService {
             grouped.computeIfAbsent(keyFn.apply(row), k -> new ArrayList<>()).add(valueFn.apply(row));
         }
         return grouped;
+    }
+
+    private record PubChildAggregates(
+            Map<Long, String> thumbnails,
+            Map<Long, List<SupportedTeamSummary>> supportedTeams,
+            Map<Long, List<String>> facilities,
+            Map<Long, List<String>> styles,
+            Map<Long, List<String>> themes,
+            Map<Long, List<String>> foods
+    ) {
     }
 }
