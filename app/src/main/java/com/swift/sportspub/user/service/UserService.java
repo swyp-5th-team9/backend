@@ -145,6 +145,7 @@ public class UserService {
         return new UserResponse(
                 user.getUserId(),
                 user.getNickname(),
+                user.getProfileImageUrl(),
                 user.getRole(),
                 user.isOnboardingCompleted(),
                 favoriteTeamResponses

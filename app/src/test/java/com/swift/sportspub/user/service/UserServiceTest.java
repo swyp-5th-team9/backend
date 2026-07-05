@@ -93,6 +93,7 @@ class UserServiceTest {
 
         var response = userService.getMyInfo(1L);
 
+        assertThat(response.profileImageUrl()).isNull();
         assertThat(response.favoriteTeams()).hasSize(1);
         assertThat(response.favoriteTeams().getFirst().teamId()).isEqualTo(99L);
         assertThat(response.favoriteTeams().getFirst().teamName()).isEqualTo("두산");
