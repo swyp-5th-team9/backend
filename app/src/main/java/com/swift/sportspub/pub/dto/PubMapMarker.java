@@ -4,6 +4,7 @@ import com.swift.sportspub.pub.entity.PubStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Schema(description = "지도 마커 1건 (BBox 조회 응답 요소)")
 public record PubMapMarker(
@@ -24,6 +25,24 @@ public record PubMapMarker(
         PubStatus status,
 
         @Schema(description = "즐겨찾기 수", example = "24")
-        Integer favoriteCount
+        Integer favoriteCount,
+
+        @Schema(description = "대표 이미지 URL (없을 시 null)", example = "https://cdn.example.com/pubs/1/1.jpg")
+        String thumbnailUrl,
+
+        @Schema(description = "상영 구단 (teamId/shortName)")
+        List<SupportedTeamSummary> supportedTeams,
+
+        @Schema(description = "시설 코드 목록")
+        List<String> facilityCodes,
+
+        @Schema(description = "펍스타일 코드 목록")
+        List<String> styleCodes,
+
+        @Schema(description = "테마 코드 목록")
+        List<String> themeCodes,
+
+        @Schema(description = "음식·주류 코드 목록")
+        List<String> foodCodes
 ) {
 }

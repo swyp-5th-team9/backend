@@ -2,7 +2,10 @@ package com.swift.sportspub.pub.repository;
 
 import com.swift.sportspub.pub.dto.BusinessDayFilter;
 import com.swift.sportspub.pub.dto.PubListSearchCondition;
+import com.swift.sportspub.pub.dto.PubMapSearchCondition;
+import com.swift.sportspub.pub.entity.CapacityRange;
 import com.swift.sportspub.pub.entity.Region;
+import com.swift.sportspub.pub.entity.SubRegion;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
@@ -27,33 +30,11 @@ public class PubRepositoryCustomImpl implements PubRepositoryCustom {
             where.append(" AND (p.name ILIKE :keyword OR p.address ILIKE :keyword) ");
             params.put("keyword", "%" + condition.keyword().trim() + "%");
         }
-        if (!condition.regions().isEmpty()) {
-            where.append(" AND p.region IN (:regions) ");
-            params.put("regions", condition.regions().stream().map(Region::name).toList());
-        }
-        if (condition.subRegion() != null) {
-            where.append(" AND p.sub_region = :subRegion ");
-            params.put("subRegion", condition.subRegion().name());
-        }
-        if (condition.capacityRange() != null) {
-            where.append(" AND p.capacity_range = :capacityRange ");
-            params.put("capacityRange", condition.capacityRange().name());
-        }
-        if (!condition.teamIds().isEmpty()) {
-            where.append(" AND EXISTS (SELECT 1 FROM pub_supported_teams pst ")
-                 .append(" WHERE pst.pub_id = p.pub_id AND pst.team_id IN (:teamIds)) ");
-            params.put("teamIds", condition.teamIds());
-        }
-        appendCodeAndFilter(where, params, "pub_facilities", "facility_code",
-                "facilityCodes", condition.facilityCodes());
-        appendCodeAndFilter(where, params, "pub_styles", "style_code",
-                "styleCodes", condition.styleCodes());
-        appendCodeAndFilter(where, params, "pub_themes", "theme_code",
-                "themeCodes", condition.themeCodes());
-        appendCodeAndFilter(where, params, "pub_food_tags", "food_code",
-                "foodCodes", condition.foodCodes());
-        appendBusinessDayFilter(where, params, condition.businessDay());
-        appendOpenNowFilter(where, params, condition.openNow());
+        appendFilterConditions(where, params,
+                condition.teamIds(), condition.regions(), condition.subRegion(),
+                condition.facilityCodes(), condition.styleCodes(),
+                condition.themeCodes(), condition.foodCodes(),
+                condition.capacityRange(), condition.openNow(), condition.businessDay());
 
         String selectSql = "SELECT p.pub_id FROM pubs p" + where
                 + " ORDER BY p.favorite_count DESC, p.pub_id DESC"
@@ -77,6 +58,74 @@ public class PubRepositoryCustomImpl implements PubRepositoryCustom {
         }
         long total = ((Number) countQuery.getSingleResult()).longValue();
         return new PubIdPage(pubIds, total);
+    }
+
+    @Override
+    public List<Long> searchMapPubIds(PubMapSearchCondition condition) {
+        StringBuilder where = new StringBuilder(" WHERE p.deleted_at IS NULL ");
+        Map<String, Object> params = new HashMap<>();
+
+        where.append(" AND p.latitude BETWEEN :swLat AND :neLat ")
+             .append(" AND p.longitude BETWEEN :swLng AND :neLng ");
+        params.put("swLat", condition.swLat());
+        params.put("neLat", condition.neLat());
+        params.put("swLng", condition.swLng());
+        params.put("neLng", condition.neLng());
+
+        appendFilterConditions(where, params,
+                condition.teamIds(), condition.regions(), condition.subRegion(),
+                condition.facilityCodes(), condition.styleCodes(),
+                condition.themeCodes(), condition.foodCodes(),
+                condition.capacityRange(), condition.openNow(), condition.businessDay());
+
+        String selectSql = "SELECT p.pub_id FROM pubs p" + where
+                + " ORDER BY p.favorite_count DESC, p.pub_id DESC ";
+
+        Query selectQuery = entityManager.createNativeQuery(selectSql);
+        params.forEach(selectQuery::setParameter);
+
+        @SuppressWarnings("unchecked")
+        List<Number> rawIds = selectQuery.getResultList();
+        List<Long> pubIds = new ArrayList<>(rawIds.size());
+        for (Number n : rawIds) {
+            pubIds.add(n.longValue());
+        }
+        return pubIds;
+    }
+
+    private void appendFilterConditions(StringBuilder where, Map<String, Object> params,
+                                        List<Long> teamIds, List<Region> regions, SubRegion subRegion,
+                                        List<String> facilityCodes, List<String> styleCodes,
+                                        List<String> themeCodes, List<String> foodCodes,
+                                        CapacityRange capacityRange, Boolean openNow,
+                                        BusinessDayFilter businessDay) {
+        if (regions != null && !regions.isEmpty()) {
+            where.append(" AND p.region IN (:regions) ");
+            params.put("regions", regions.stream().map(Region::name).toList());
+        }
+        if (subRegion != null) {
+            where.append(" AND p.sub_region = :subRegion ");
+            params.put("subRegion", subRegion.name());
+        }
+        if (capacityRange != null) {
+            where.append(" AND p.capacity_range = :capacityRange ");
+            params.put("capacityRange", capacityRange.name());
+        }
+        if (teamIds != null && !teamIds.isEmpty()) {
+            where.append(" AND EXISTS (SELECT 1 FROM pub_supported_teams pst ")
+                 .append(" WHERE pst.pub_id = p.pub_id AND pst.team_id IN (:teamIds)) ");
+            params.put("teamIds", teamIds);
+        }
+        appendCodeAndFilter(where, params, "pub_facilities", "facility_code",
+                "facilityCodes", facilityCodes);
+        appendCodeAndFilter(where, params, "pub_styles", "style_code",
+                "styleCodes", styleCodes);
+        appendCodeAndFilter(where, params, "pub_themes", "theme_code",
+                "themeCodes", themeCodes);
+        appendCodeAndFilter(where, params, "pub_food_tags", "food_code",
+                "foodCodes", foodCodes);
+        appendBusinessDayFilter(where, params, businessDay);
+        appendOpenNowFilter(where, params, openNow);
     }
 
     private void appendCodeAndFilter(StringBuilder where, Map<String, Object> params,
