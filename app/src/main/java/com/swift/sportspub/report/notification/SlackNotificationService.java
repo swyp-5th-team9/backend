@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -21,7 +22,9 @@ import java.time.format.DateTimeFormatter;
 public class SlackNotificationService {
 
     private static final int CONTENT_MAX_LENGTH = 300;
-    private static final DateTimeFormatter CREATED_AT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter CREATED_AT_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(KST);
 
     private final SlackProperties slackProperties;
     private final SlackWebhookClient slackWebhookClient;
@@ -45,7 +48,7 @@ public class SlackNotificationService {
         ));
 
         if (report.getCreatedAt() != null) {
-            message.append(" | ").append(report.getCreatedAt().format(CREATED_AT_FORMAT));
+            message.append(" | ").append(report.getCreatedAt().atZone(KST).format(CREATED_AT_FORMAT));
         }
 
         message.append('\n');
