@@ -10,6 +10,7 @@ import com.swift.sportspub.pub.dto.PubDetailResponse;
 import com.swift.sportspub.pub.dto.PubListResponse;
 import com.swift.sportspub.pub.dto.PubListSearchCondition;
 import com.swift.sportspub.pub.dto.PubMapResponse;
+import com.swift.sportspub.pub.dto.PubMapSearchCondition;
 import com.swift.sportspub.pub.entity.CapacityRange;
 import com.swift.sportspub.pub.service.PubQueryService;
 import com.swift.sportspub.pub.service.RegionFilter;
@@ -124,8 +125,11 @@ public class PubController {
             summary = "지도 펍 조회 (BBox)",
             description = """
                     지도 화면에서 보이는 BBox 안의 펍 마커를 조회한다.
-                    페이징 없이 좌표·이름·상태·찜 수만 포함한 경량 응답.
-                    teamId 전송 시 해당 구단을 상영하는 펍으로 필터링한다.
+                    페이징 없이 좌표·이름·상태·찜 수·태그 필드(상영 구단·시설·스타일·테마·음식·썸네일)를 포함한 응답.
+                    필터: 응원 구단(teamId 단일 또는 teamIds 다중 OR) · 지역(region — 자치구/광역/sub 코드) ·
+                    시설/스타일/테마/음식 코드(각 AND 매칭) · 수용 규모 · 영업중 여부(openNow) ·
+                    영업요일(businessDay — 선택 요일 전부 영업).
+                    teamId 와 teamIds 동시 전송 시 teamIds 우선.
                     """
     )
     @DocResponses({
@@ -140,12 +144,46 @@ public class PubController {
             @Parameter(description = "남서쪽 경도", example = "127.02") @RequestParam BigDecimal swLng,
             @Parameter(description = "북동쪽 위도", example = "37.51") @RequestParam BigDecimal neLat,
             @Parameter(description = "북동쪽 경도", example = "127.04") @RequestParam BigDecimal neLng,
-            @Parameter(description = "상영 구단 ID — 미전송 시 전체", example = "1")
-            @RequestParam(required = false) Long teamId
+
+            @Parameter(description = "상영 구단 ID (단일, 호환용)", example = "1")
+            @RequestParam(required = false) Long teamId,
+
+            @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
+            @RequestParam(required = false) List<Long> teamIds,
+
+            @Parameter(description = "지역 — 자치구 코드/광역 코드/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
+            @RequestParam(required = false) String region,
+
+            @Parameter(description = "시설 코드 (AND, 예: GROUP_SEAT, PARKING)")
+            @RequestParam(required = false) List<String> facilityCodes,
+
+            @Parameter(description = "스타일 코드 (AND, 예: BIG_SCREEN)")
+            @RequestParam(required = false) List<String> styleCodes,
+
+            @Parameter(description = "테마 코드 (AND, 예: SPACIOUS_VIEW)")
+            @RequestParam(required = false) List<String> themeCodes,
+
+            @Parameter(description = "음식 코드 (AND, 예: CHICKEN, BEER)")
+            @RequestParam(required = false) List<String> foodCodes,
+
+            @Parameter(description = "수용 규모", example = "R_50_100")
+            @RequestParam(required = false) CapacityRange capacityRange,
+
+            @Parameter(description = "지금 영업중인 펍만 (true)")
+            @RequestParam(required = false) Boolean openNow,
+
+            @Parameter(description = "영업요일 — EVERYDAY/WEEKDAY/WEEKEND/MON..SUN (선택 요일 전부 영업)")
+            @RequestParam(required = false) BusinessDayFilter businessDay
     ) {
-        return ApiResponse.success(
-                pubQueryService.findMapMarkers(swLat, swLng, neLat, neLng, teamId)
+        RegionFilter regionFilter = RegionResolver.resolve(region);
+        List<Long> mergedTeamIds = mergeTeamIds(teamId, teamIds);
+        PubMapSearchCondition condition = new PubMapSearchCondition(
+                swLat, swLng, neLat, neLng,
+                mergedTeamIds, regionFilter.regions(), regionFilter.subRegion(),
+                facilityCodes, styleCodes, themeCodes, foodCodes,
+                capacityRange, openNow, businessDay
         );
+        return ApiResponse.success(pubQueryService.findMapMarkers(condition));
     }
 
     @Operation(
