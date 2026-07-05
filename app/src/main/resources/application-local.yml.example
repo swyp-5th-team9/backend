@@ -73,6 +73,9 @@ app:
     region: ${AWS_REGION:ap-northeast-2}
     access-key: ${AWS_ACCESS_KEY_ID:}
     secret-key: ${AWS_SECRET_ACCESS_KEY:}
+  # Slack 제보 알림 — .env: SLACK_REPORT_WEBHOOK_URL (비어 있으면 알림 전송 안 함)
+  slack:
+    report-webhook-url: ${SLACK_REPORT_WEBHOOK_URL:}
 
 logging:
   level:

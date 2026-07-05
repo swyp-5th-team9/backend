@@ -70,6 +70,8 @@ app:
     refresh-ttl-seconds: 1209600
   deeplink:
     scheme: sportspub://auth/callback
+  slack:
+    report-webhook-url: ${SLACK_REPORT_WEBHOOK_URL:}
 
 logging:
   level:

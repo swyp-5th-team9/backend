@@ -8,6 +8,7 @@ import com.swift.sportspub.report.entity.Report;
 import com.swift.sportspub.report.entity.ReportImage;
 import com.swift.sportspub.report.exception.ReportErrorCode;
 import com.swift.sportspub.report.exception.ReportException;
+import com.swift.sportspub.report.notification.SlackNotificationService;
 import com.swift.sportspub.report.repository.ReportImageRepository;
 import com.swift.sportspub.report.repository.ReportRepository;
 import com.swift.sportspub.report.storage.ReportS3StorageService;
@@ -55,6 +56,7 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final ReportImageRepository reportImageRepository;
     private final ReportS3StorageService reportS3StorageService;
+    private final SlackNotificationService slackNotificationService;
 
     @Transactional
     public ReportCreateResponse createReport(Long userId, ReportCreateRequest request) {
@@ -82,6 +84,8 @@ public class ReportService {
                             .build()
             );
         }
+
+        slackNotificationService.notifyReportCreated(report, pub, images.size());
 
         return ReportCreateResponse.from(report);
     }
