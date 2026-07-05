@@ -66,6 +66,7 @@ public class UserController {
             summary = "내 정보 조회",
             description = """
                     현재 로그인한 사용자의 정보를 조회한다.
+                    profileImageUrl은 프로필 이미지 S3 URL이며, 미설정 시 null이다.
                     favoriteTeams에는 저장된 선호 구단의 teamId와 teamName(구단 약칭)이 포함된다.
                     """
     )
@@ -86,10 +87,12 @@ public class UserController {
             summary = "내 정보 수정",
             description = """
                     현재 로그인한 사용자의 회원 정보를 수정한다.
-                    닉네임 및 선호 구단 정보를 변경할 수 있다.
+                    multipart/form-data로 nickname, teamIds, profileImage를 전달할 수 있다.
                     nickname은 2~20자까지 입력할 수 있고, teamIds는 최대 3개까지 선택할 수 있다.
+                    profileImage는 선택 값이며 최대 1장, 파일당 10MB 이하, jpeg/png/gif/webp만 허용한다.
+                    미전달 필드는 기존 값을 유지한다. profileImage를 빈 파일로 전달해도 기존 이미지를 유지한다.
                     teamIds를 전달하면 기존 선호 구단을 새 목록으로 교체하며, 빈 배열([]) 전달 시 전체 해제한다.
-                    nickname만 전달하면 선호 구단은 변경되지 않는다.
+                    nickname만 전달하면 선호 구단·프로필 이미지는 변경되지 않는다.
                     teamIds에 중복 ID가 포함되면 중복을 제거한 뒤 저장한다.
                     존재하지 않는 teamId는 400으로 반환한다.
                     """,
@@ -103,7 +106,7 @@ public class UserController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공"),
-            @ApiResponse(responseCode = "400", description = "입력값 오류 또는 존재하지 않는 teamId"),
+            @ApiResponse(responseCode = "400", description = "입력값 오류, 이미지 형식/용량 오류, 또는 존재하지 않는 teamId"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
