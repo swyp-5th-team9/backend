@@ -17,15 +17,20 @@ import com.swift.sportspub.user.exception.UserNotFoundException;
 import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
 import com.swift.sportspub.user.repository.WithdrawalReasonRepository;
+import com.swift.sportspub.user.storage.UserProfileImageStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,11 +38,25 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final long MAX_PROFILE_IMAGE_SIZE_BYTES = 10L * 1024 * 1024;
+
+    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp"
+    );
+
+    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of(
+            "jpg", "jpeg", "png", "gif", "webp"
+    );
+
     private final UserRepository userRepository;
     private final UserFavoriteTeamRepository userFavoriteTeamRepository;
     private final TeamRepository teamRepository;
     private final WithdrawalReasonRepository withdrawalReasonRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserProfileImageStorageService userProfileImageStorageService;
 
     /*
      * 현재 JWT 인증 구조는 SecurityContext principal에 Long userId를 저장한다.
@@ -61,6 +80,7 @@ public class UserService {
 
         updateNickname(user, request.getNickname());
         replaceFavoriteTeams(user, request.getTeamIds());
+        updateProfileImage(user, request.getProfileImage());
     }
 
     @Transactional
@@ -100,6 +120,36 @@ public class UserService {
         }
 
         user.updateProfile(nickname);
+    }
+
+    private void updateProfileImage(User user, MultipartFile profileImage) {
+        if (profileImage == null || profileImage.isEmpty()) {
+            return;
+        }
+
+        validateProfileImage(profileImage);
+        String imageUrl = userProfileImageStorageService.upload(profileImage);
+        user.updateProfileImage(imageUrl);
+    }
+
+    private void validateProfileImage(MultipartFile profileImage) {
+        if (profileImage.getSize() > MAX_PROFILE_IMAGE_SIZE_BYTES) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "프로필 이미지 용량(10MB) 초과");
+        }
+        if (!isSupportedImage(profileImage)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "지원하지 않는 이미지 형식");
+        }
+    }
+
+    private boolean isSupportedImage(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (StringUtils.hasText(contentType) && ALLOWED_IMAGE_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            return true;
+        }
+
+        String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
+        return StringUtils.hasText(extension)
+                && ALLOWED_IMAGE_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT));
     }
 
     private void replaceFavoriteTeams(User user, List<Long> teamIds) {

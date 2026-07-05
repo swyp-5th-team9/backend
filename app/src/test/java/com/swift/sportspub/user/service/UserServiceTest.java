@@ -13,6 +13,7 @@ import com.swift.sportspub.user.entity.UserFavoriteTeam;
 import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
 import com.swift.sportspub.user.repository.WithdrawalReasonRepository;
+import com.swift.sportspub.user.storage.UserProfileImageStorageService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -46,6 +47,9 @@ class UserServiceTest {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private UserProfileImageStorageService userProfileImageStorageService;
 
     @InjectMocks
     private UserService userService;
