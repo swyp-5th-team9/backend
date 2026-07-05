@@ -7,14 +7,18 @@ import com.swift.sportspub.user.dto.WithdrawRequest;
 import com.swift.sportspub.user.service.UserService;
 import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -88,7 +92,14 @@ public class UserController {
                     nickname만 전달하면 선호 구단은 변경되지 않는다.
                     teamIds에 중복 ID가 포함되면 중복을 제거한 뒤 저장한다.
                     존재하지 않는 teamId는 400으로 반환한다.
-                    """
+                    """,
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(implementation = UpdateUserRequest.class)
+                    )
+            )
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공"),
@@ -97,10 +108,10 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PatchMapping("/me")
+    @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public com.swift.sportspub.common.response.ApiResponse<Void> updateMyInfo(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdateUserRequest request
+            @Valid @ModelAttribute UpdateUserRequest request
     ) {
         userService.updateMyInfo(userId, request);
         return com.swift.sportspub.common.response.ApiResponse.success();

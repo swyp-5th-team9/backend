@@ -59,8 +59,8 @@ public class UserService {
     public void updateMyInfo(Long userId, UpdateUserRequest request) {
         User user = getUser(userId);
 
-        updateNickname(user, request.nickname());
-        replaceFavoriteTeams(user, request.teamIds());
+        updateNickname(user, request.getNickname());
+        replaceFavoriteTeams(user, request.getTeamIds());
     }
 
     @Transactional
