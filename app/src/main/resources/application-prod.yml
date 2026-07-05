@@ -75,6 +75,8 @@ app:
     region: ${AWS_REGION}
     access-key: ${AWS_ACCESS_KEY_ID}
     secret-key: ${AWS_SECRET_ACCESS_KEY}
+  slack:
+    report-webhook-url: ${SLACK_REPORT_WEBHOOK_URL:}
 
 logging:
   level:
