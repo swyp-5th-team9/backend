@@ -46,6 +46,9 @@ public class User extends BaseEntity {
     @Column(name = "nickname", length = 20)
     private String nickname;
 
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
@@ -91,6 +94,10 @@ public class User extends BaseEntity {
         if (nickname != null) {
             this.nickname = nickname;
         }
+    }
+
+    public void updateProfileImage(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void changeRole(UserRole role) {
