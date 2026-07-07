@@ -46,10 +46,10 @@ public class Pub extends BaseEntity {
     @Column(name = "sub_region", length = 30)
     private SubRegion subRegion;
 
-    @Column(name = "latitude", nullable = true, precision = 10, scale = 7)
+    @Column(name = "latitude", nullable = false, precision = 10, scale = 7)
     private BigDecimal latitude;
 
-    @Column(name = "longitude", nullable = true, precision = 10, scale = 7)
+    @Column(name = "longitude", nullable = false, precision = 10, scale = 7)
     private BigDecimal longitude;
 
     @Column(name = "phone", length = 20)
