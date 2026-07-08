@@ -17,3 +17,9 @@ springdoc:
     operations-sorter: method
   api-docs:
     path: /v3/api-docs
+
+app:
+  user:
+    withdrawal:
+      retention-days: 30
+      hard-delete-cron: "0 0 3 * * *"

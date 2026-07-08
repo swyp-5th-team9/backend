@@ -76,6 +76,10 @@ app:
   # Slack 제보 알림 — .env: SLACK_REPORT_WEBHOOK_URL (비어 있으면 알림 전송 안 함)
   slack:
     report-webhook-url: ${SLACK_REPORT_WEBHOOK_URL:}
+  user:
+    withdrawal:
+      retention-days: 30
+      hard-delete-cron: "0 0 3 * * *"
 
 logging:
   level:

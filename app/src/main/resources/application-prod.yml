@@ -77,6 +77,10 @@ app:
     secret-key: ${AWS_SECRET_ACCESS_KEY}
   slack:
     report-webhook-url: ${SLACK_REPORT_WEBHOOK_URL:}
+  user:
+    withdrawal:
+      retention-days: 30
+      hard-delete-cron: "0 0 3 * * *"
 
 logging:
   level:
