@@ -108,13 +108,34 @@ public class User extends BaseEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
+    /**
+     * 탈퇴 후 보관 기간({@code retentionDays}) 이내이면 계정 복구 가능.
+     */
+    public boolean canRestore(LocalDateTime now, int retentionDays) {
+        if (deletedAt == null) {
+            return false;
+        }
+        return now.isBefore(deletedAt.plusDays(retentionDays));
+    }
+
+    /**
+     * 탈퇴 후 보관 기간이 경과했는지 여부.
+     */
+    public boolean isWithdrawalExpired(LocalDateTime now, int retentionDays) {
+        if (deletedAt == null) {
+            return false;
+        }
+        return !now.isBefore(deletedAt.plusDays(retentionDays));
+    }
+
     /*
      * 탈퇴 회원이 동일 OAuth 계정으로 재로그인할 때 계정을 복구한다.
-     * MVP 정책: 신규 row를 만들지 않고 deletedAt을 null로 되돌린 뒤 온보딩 정보를 초기화한다.
+     * 보관 기간 이내에만 호출한다. nickname·온보딩·프로필 이미지를 초기화한다.
      */
     public void restoreForReLogin() {
         this.deletedAt = null;
         this.nickname = null;
+        this.profileImageUrl = null;
         this.onboardingCompleted = false;
     }
 
