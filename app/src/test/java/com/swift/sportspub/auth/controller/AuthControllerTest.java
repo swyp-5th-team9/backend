@@ -39,7 +39,7 @@ class AuthControllerTest {
 
     @Test
     void loginWithKakao_passesAuthorizationHeaderTokenToService() throws Exception {
-        LoginResponse loginResponse = new LoginResponse("jwt-access", "jwt-refresh", UserRole.FAN, false);
+        LoginResponse loginResponse = new LoginResponse("jwt-access", "jwt-refresh", UserRole.FAN, false, false);
         when(authService.loginWithKakao(eq("kakao-token"))).thenReturn(loginResponse);
 
         mockMvc.perform(post("/api/v1/auth/login/kakao")
@@ -54,7 +54,7 @@ class AuthControllerTest {
 
     @Test
     void loginWithNaver_passesAuthorizationHeaderTokenToService() throws Exception {
-        LoginResponse loginResponse = new LoginResponse("jwt-access", "jwt-refresh", UserRole.FAN, true);
+        LoginResponse loginResponse = new LoginResponse("jwt-access", "jwt-refresh", UserRole.FAN, true, false);
         when(authService.loginWithNaver(eq("naver-token"))).thenReturn(loginResponse);
 
         mockMvc.perform(post("/api/v1/auth/login/naver")

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -49,6 +50,29 @@ public class UserProfileImageStorageService {
         }
 
         return buildPublicUrl(key);
+    }
+
+    /**
+     * Hard Delete 시 저장된 프로필 이미지 객체를 삭제한다. URL이 현재 버킷과 맞지 않으면 무시한다.
+     */
+    public void deleteByUrlIfPresent(String profileImageUrl) {
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            return;
+        }
+
+        String prefix = "https://%s.s3.%s.amazonaws.com/".formatted(
+                s3Properties.getBucket(),
+                s3Properties.getRegion()
+        );
+        if (!profileImageUrl.startsWith(prefix)) {
+            return;
+        }
+
+        String key = profileImageUrl.substring(prefix.length());
+        s3Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(s3Properties.getBucket())
+                .key(key)
+                .build());
     }
 
     /**

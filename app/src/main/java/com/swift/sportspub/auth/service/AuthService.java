@@ -11,10 +11,11 @@ import com.swift.sportspub.auth.jwt.JwtProvider;
 import com.swift.sportspub.auth.repository.RefreshTokenRepository;
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
+import com.swift.sportspub.user.config.UserWithdrawalProperties;
 import com.swift.sportspub.user.entity.OAuthProvider;
 import com.swift.sportspub.user.entity.User;
-import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
+import com.swift.sportspub.user.service.UserHardDeleteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,9 +37,10 @@ public class AuthService {
     private final KakaoClient kakaoClient;
     private final NaverClient naverClient;
     private final UserRepository userRepository;
-    private final UserFavoriteTeamRepository userFavoriteTeamRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
+    private final UserHardDeleteService userHardDeleteService;
+    private final UserWithdrawalProperties userWithdrawalProperties;
 
     @Value("${app.jwt.refresh-ttl-seconds}")
     private long refreshTtlSeconds;
@@ -52,9 +55,9 @@ public class AuthService {
     @Transactional
     public LoginResponse loginWithKakao(String accessToken) {
         KakaoUserInfo userInfo = kakaoClient.getUserInfo(accessToken);
-        User user = findOrCreateUser(OAuthProvider.KAKAO, userInfo.oauthId());
+        UserLoginOutcome outcome = findOrCreateUser(OAuthProvider.KAKAO, userInfo.oauthId());
 
-        return createLoginResponse(user);
+        return createLoginResponse(outcome);
     }
 
     /*
@@ -99,9 +102,9 @@ public class AuthService {
     @Transactional
     public LoginResponse loginWithNaver(String accessToken) {
         NaverUserInfo userInfo = naverClient.getUserInfo(accessToken);
-        User user = findOrCreateUser(OAuthProvider.NAVER, userInfo.oauthId());
+        UserLoginOutcome outcome = findOrCreateUser(OAuthProvider.NAVER, userInfo.oauthId());
 
-        return createLoginResponse(user);
+        return createLoginResponse(outcome);
     }
 
     /*
@@ -113,31 +116,42 @@ public class AuthService {
      * 새 Client와 provider 분기만 추가하면 되어 수정 범위를 줄일 수 있다.
      */
     /*
-     * OAuth 로그인은 탈퇴 회원을 포함해 조회한다.
-     * 탈퇴 회원이 재로그인하면 기존 row를 복구하고, 없으면 신규 생성한다.
+     * OAuth 로그인 흐름:
+     * 1) 탈퇴 포함 조회 2) 없으면 신규 3) 활성이면 기존 로그인
+     * 4) 탈퇴·보관 기간 이내면 복구(restored=true) 5) 기간 초과면 Hard Delete 후 신규(restored=false)
      */
-    private User findOrCreateUser(OAuthProvider oauthProvider, String oauthId) {
-        return userRepository.findByOauthProviderAndOauthIdIncludingDeleted(oauthProvider, oauthId)
-                .map(user -> {
-                    /*
-                     * MVP 복구 정책: 신규 row를 만들지 않고 기존 계정을 되살린다.
-                     * 닉네임·온보딩·선호 구단을 초기화해 재온보딩 흐름으로 보낸다. (user/README.md)
-                     */
-                    if (user.isDeleted()) {
-                        restoreWithdrawnUser(user);
-                    }
-                    return user;
-                })
-                .orElseGet(() -> createUser(oauthProvider, oauthId));
+    private UserLoginOutcome findOrCreateUser(OAuthProvider oauthProvider, String oauthId) {
+        Optional<User> optionalUser = userRepository.findByOauthProviderAndOauthIdIncludingDeleted(
+                oauthProvider,
+                oauthId
+        );
+
+        if (optionalUser.isEmpty()) {
+            return new UserLoginOutcome(createUser(oauthProvider, oauthId), false);
+        }
+
+        User user = optionalUser.get();
+        if (!user.isDeleted()) {
+            return new UserLoginOutcome(user, false);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        int retentionDays = userWithdrawalProperties.getRetentionDays();
+
+        if (user.canRestore(now, retentionDays)) {
+            restoreWithdrawnUser(user);
+            return new UserLoginOutcome(user, true);
+        }
+
+        userHardDeleteService.hardDelete(user);
+        return new UserLoginOutcome(createUser(oauthProvider, oauthId), false);
     }
 
     /*
-     * restoreForReLogin(): deletedAt 해제, nickname null, onboardingCompleted false
-     * 선호 구단은 별도 삭제 — 탈퇴 전 프로필을 그대로 두지 않는다.
+     * restoreForReLogin(): deletedAt만 해제한다. 탈퇴 전 프로필·연관 데이터는 그대로 유지한다.
      */
     private void restoreWithdrawnUser(User user) {
         user.restoreForReLogin();
-        userFavoriteTeamRepository.deleteByUserId(user.getUserId());
     }
 
     /*
@@ -158,15 +172,19 @@ public class AuthService {
      * RefreshToken은 서버 DB에 SHA-256 해시로 저장해 이후 재발급 요청이
      * "서버가 현재 인정하는 토큰"인지 확인한다.
      */
-    private LoginResponse createLoginResponse(User user) {
-        TokenResponse tokenResponse = createTokenResponse(user);
+    private LoginResponse createLoginResponse(UserLoginOutcome outcome) {
+        TokenResponse tokenResponse = createTokenResponse(outcome.user());
 
         return new LoginResponse(
                 tokenResponse.accessToken(),
                 tokenResponse.refreshToken(),
-                user.getRole(),
-                user.isOnboardingCompleted()
+                outcome.user().getRole(),
+                outcome.user().isOnboardingCompleted(),
+                outcome.restored()
         );
+    }
+
+    private record UserLoginOutcome(User user, boolean restored) {
     }
 
     private TokenResponse createTokenResponse(User user) {

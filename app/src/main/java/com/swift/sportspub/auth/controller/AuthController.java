@@ -42,6 +42,8 @@ public class AuthController {
                     백엔드는 카카오 사용자 정보를 조회하고 회원 여부를 확인한 후 JWT를 발급한다.
                     최초 로그인 사용자는 자동 회원 생성 후 온보딩 여부를 반환한다.
                     Authorization 헤더 누락 시 500(INTERNAL_ERROR)이 반환된다.
+                    탈퇴 후 30일 이내 동일 OAuth 재로그인 시 계정이 복구되며 restored=true가 반환된다.
+                    30일 초과 시 기존 계정은 Hard Delete 후 신규 회원으로 처리된다(restored=false).
                     """
     )
     @DocResponses({
@@ -85,6 +87,8 @@ public class AuthController {
                     SDK 토큰 문자열만 전달하거나 Bearer 접두사를 붙여 전달해도 된다.
                     백엔드는 네이버 사용자 정보를 조회하고 회원 여부를 확인한 후 JWT를 발급한다.
                     최초 로그인 사용자는 자동 회원 생성 후 온보딩 여부를 반환한다.
+                    탈퇴 후 30일 이내 동일 OAuth 재로그인 시 계정이 복구되며 restored=true가 반환된다.
+                    30일 초과 시 기존 계정은 Hard Delete 후 신규 회원으로 처리된다(restored=false).
                     Authorization 헤더 누락 시 500(INTERNAL_ERROR)이 반환된다.
                     """
     )
