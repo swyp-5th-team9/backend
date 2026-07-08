@@ -22,6 +22,11 @@ public class UserHardDeleteScheduler {
 
     @Scheduled(cron = "${app.user.withdrawal.hard-delete-cron}")
     public void hardDeleteExpiredWithdrawnUsers() {
+        int retriedCount = userHardDeleteService.retryFailedProfileImageDeletions();
+        if (retriedCount > 0) {
+            log.info("Retried and deleted {} failed profile images from S3", retriedCount);
+        }
+
         LocalDateTime threshold = LocalDateTime.now()
                 .minusDays(userWithdrawalProperties.getRetentionDays());
         int deletedCount = userHardDeleteService.hardDeleteExpiredWithdrawn(threshold);
