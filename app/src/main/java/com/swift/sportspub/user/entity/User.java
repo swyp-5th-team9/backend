@@ -130,13 +130,10 @@ public class User extends BaseEntity {
 
     /*
      * 탈퇴 회원이 동일 OAuth 계정으로 재로그인할 때 계정을 복구한다.
-     * 보관 기간 이내에만 호출한다. nickname·온보딩·프로필 이미지를 초기화한다.
+     * 보관 기간 이내에만 호출한다. deletedAt만 해제하며 나머지 데이터는 유지한다.
      */
     public void restoreForReLogin() {
         this.deletedAt = null;
-        this.nickname = null;
-        this.profileImageUrl = null;
-        this.onboardingCompleted = false;
     }
 
     public boolean isDeleted() {

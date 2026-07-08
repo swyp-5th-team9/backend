@@ -10,7 +10,6 @@ import com.swift.sportspub.user.config.UserWithdrawalProperties;
 import com.swift.sportspub.user.entity.OAuthProvider;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.entity.UserRole;
-import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
 import com.swift.sportspub.user.service.UserHardDeleteService;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,9 +46,6 @@ class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private UserFavoriteTeamRepository userFavoriteTeamRepository;
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
@@ -105,7 +101,6 @@ class AuthServiceTest {
         assertThat(response.restored()).isFalse();
         assertThat(response.onboardingCompleted()).isTrue();
         verify(userHardDeleteService, never()).hardDelete(any());
-        verify(userFavoriteTeamRepository, never()).deleteByUserId(any());
     }
 
     @Test
@@ -117,11 +112,11 @@ class AuthServiceTest {
         LoginResponse response = authService.loginWithKakao(ACCESS_TOKEN);
 
         assertThat(response.restored()).isTrue();
-        assertThat(response.onboardingCompleted()).isFalse();
+        assertThat(response.onboardingCompleted()).isTrue();
         assertThat(withdrawnUser.isDeleted()).isFalse();
-        assertThat(withdrawnUser.getNickname()).isNull();
-        assertThat(withdrawnUser.getProfileImageUrl()).isNull();
-        verify(userFavoriteTeamRepository).deleteByUserId(1L);
+        assertThat(withdrawnUser.getNickname()).isEqualTo("탈퇴닉네임");
+        assertThat(withdrawnUser.getProfileImageUrl())
+                .isEqualTo("https://bucket.s3.ap-northeast-2.amazonaws.com/profiles/old.jpg");
         verify(userHardDeleteService, never()).hardDelete(any());
         verify(userRepository, never()).save(any());
     }
@@ -145,7 +140,6 @@ class AuthServiceTest {
         ArgumentCaptor<User> saveCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(saveCaptor.capture());
         assertThat(saveCaptor.getValue().getOauthId()).isEqualTo(OAUTH_ID);
-        verify(userFavoriteTeamRepository, never()).deleteByUserId(any());
     }
 
     private User activeUser() {

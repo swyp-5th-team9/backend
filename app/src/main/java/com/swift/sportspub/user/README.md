@@ -34,7 +34,7 @@
 | 상황 | 동작 | `LoginResponse.restored` |
 |---|---|---|
 | 활성 회원 로그인 | 기존 처리 | `false` |
-| 탈퇴 30일 **이내** OAuth 재로그인 | `restoreForReLogin()` — deletedAt·닉네임·프로필 이미지·온보딩 초기화, 선호 구단 삭제 | `true` |
+| 탈퇴 30일 **이내** OAuth 재로그인 | `restoreForReLogin()` — `deletedAt`만 해제, 기존 데이터 전부 유지 | `true` |
 | 탈퇴 30일 **초과** OAuth 재로그인 | Hard Delete 후 신규 User 생성 (배치 실행 여부 무관) | `false` |
 | 회원 없음 | 신규 가입 | `false` |
 

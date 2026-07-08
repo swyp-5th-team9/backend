@@ -14,7 +14,6 @@ import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.user.config.UserWithdrawalProperties;
 import com.swift.sportspub.user.entity.OAuthProvider;
 import com.swift.sportspub.user.entity.User;
-import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import com.swift.sportspub.user.repository.UserRepository;
 import com.swift.sportspub.user.service.UserHardDeleteService;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +37,6 @@ public class AuthService {
     private final KakaoClient kakaoClient;
     private final NaverClient naverClient;
     private final UserRepository userRepository;
-    private final UserFavoriteTeamRepository userFavoriteTeamRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
     private final UserHardDeleteService userHardDeleteService;
@@ -150,12 +148,10 @@ public class AuthService {
     }
 
     /*
-     * restoreForReLogin(): deletedAt 해제, nickname null, onboardingCompleted false
-     * 선호 구단은 별도 삭제 — 탈퇴 전 프로필을 그대로 두지 않는다.
+     * restoreForReLogin(): deletedAt만 해제한다. 탈퇴 전 프로필·연관 데이터는 그대로 유지한다.
      */
     private void restoreWithdrawnUser(User user) {
         user.restoreForReLogin();
-        userFavoriteTeamRepository.deleteByUserId(user.getUserId());
     }
 
     /*
