@@ -1,6 +1,7 @@
 package com.swift.sportspub.team.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.ApiFailResponse;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.team.dto.TeamListResponse;
@@ -8,6 +9,8 @@ import com.swift.sportspub.team.entity.SportType;
 import com.swift.sportspub.team.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +35,21 @@ public class TeamController {
                     """
     )
     @DocResponses({
-            @DocResponse(responseCode = "200", description = "조회 성공"),
-            @DocResponse(responseCode = "401", description = "인증 필요"),
-            @DocResponse(responseCode = "500", description = "서버 오류")
+            @DocResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = TeamListResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @GetMapping
     public ApiResponse<TeamListResponse> getList(

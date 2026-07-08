@@ -57,7 +57,11 @@ public class ReportController {
             )
     )
     @DocResponses({
-            @DocResponse(responseCode = "201", description = "등록 성공 — body: ApiResponse { success, data: { reportId } }")
+            @DocResponse(
+                    responseCode = "201",
+                    description = "등록 성공",
+                    content = @Content(schema = @Schema(implementation = ReportCreateResponse.class))
+            )
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ReportCreateResponse>> createReport(

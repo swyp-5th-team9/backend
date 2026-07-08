@@ -1,11 +1,17 @@
 package com.swift.sportspub.match.controller;
 
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.ApiFailResponse;
+import com.swift.sportspub.common.swagger.DocResponse;
+import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.match.dto.MatchScheduleResponse;
 import com.swift.sportspub.match.service.MatchScheduleService;
 import com.swift.sportspub.team.entity.SportType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,9 +32,55 @@ public class MatchScheduleController {
 
     @Operation(
             summary = "경기 일정 조회",
-            description = "특정 일자(date) 또는 기간(from~to) + 구단(teamId) 필터로 경기 일정을 조회한다. "
-                    + "date, from, to 모두 미전송 시 오늘 일정을 반환한다."
+            description = """
+                    특정 일자(date) 또는 기간(from~to) + 구단(teamId) 필터로 경기 일정을 조회한다.
+                    date, from, to 모두 미전송 시 오늘 일정을 반환한다.
+                    sportType 미전송 시 KBO를 기본값으로 사용한다.
+                    """
     )
+    @DocResponses({
+            @DocResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = MatchScheduleResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — date/from/to 조합 검증 실패",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "date와 from/to 동시 사용",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"date 와 from/to 는 동시에 사용할 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "from/to 미완성",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"from 과 to 는 함께 전송해야 합니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "to가 from보다 이전",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"to 는 from 보다 같거나 이후여야 합니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
+    })
     @GetMapping
     public ApiResponse<MatchScheduleResponse> getSchedule(
             @Parameter(description = "스포츠 종목 (미전송 시 KBO)", example = "KBO")

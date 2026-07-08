@@ -22,10 +22,10 @@ public class ApiResponse<T> {
     @Schema(description = "성공 시 payload")
     private final T data;
 
-    @Schema(description = "실패 시 에러 코드 (ErrorCode 또는 ReportErrorCode name)", example = "NOT_FOUND")
+    @Schema(hidden = true)
     private final String errorCode;
 
-    @Schema(description = "실패 시 메시지", example = "리소스를 찾을 수 없습니다.")
+    @Schema(hidden = true)
     private final String message;
 
     private ApiResponse(boolean success, T data, String errorCode, String message) {
