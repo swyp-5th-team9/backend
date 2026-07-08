@@ -22,7 +22,7 @@ public class UpdateUserRequest {
     @Size(min = 2, max = 20, message = "nickname은 2~20자까지 입력할 수 있습니다.")
     private String nickname;
 
-    @Schema(description = "선호 구단 ID 목록. 미전달 시 유지, 빈 배열 전달 시 전체 해제. 최대 3개, 존재하지 않는 ID는 400.", example = "[1, 3, 7]")
+    @Schema(description = "선호 구단 ID 목록. multipart에서 teamIds=1&teamIds=3 형태로 반복 전달. 미전달 시 유지, 빈 값 없이 전달 시 전체 해제. 최대 3개.")
     @Size(max = 3, message = "teamIds는 최대 3개까지 선택할 수 있습니다.")
     private List<Long> teamIds;
 

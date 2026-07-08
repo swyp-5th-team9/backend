@@ -3,6 +3,7 @@ package com.swift.sportspub.pub.controller;
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.ApiFailResponse;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.pub.dto.BusinessDayFilter;
@@ -17,6 +18,8 @@ import com.swift.sportspub.pub.service.RegionFilter;
 import com.swift.sportspub.pub.service.RegionResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,10 +54,26 @@ public class PubController {
                     """
     )
     @DocResponses({
-            @DocResponse(responseCode = "200", description = "조회 성공"),
-            @DocResponse(responseCode = "400", description = "잘못된 파라미터"),
-            @DocResponse(responseCode = "401", description = "인증 필요"),
-            @DocResponse(responseCode = "500", description = "서버 오류")
+            @DocResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PubListResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — 잘못된 파라미터",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @GetMapping
     public ApiResponse<PubListResponse> getList(
@@ -133,10 +152,26 @@ public class PubController {
                     """
     )
     @DocResponses({
-            @DocResponse(responseCode = "200", description = "조회 성공"),
-            @DocResponse(responseCode = "400", description = "BBox 좌표 누락 또는 범위 오류"),
-            @DocResponse(responseCode = "401", description = "인증 필요"),
-            @DocResponse(responseCode = "500", description = "서버 오류")
+            @DocResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PubMapResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — BBox 좌표 누락 또는 범위 오류",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @GetMapping("/map")
     public ApiResponse<PubMapResponse> getMapMarkers(
@@ -194,10 +229,26 @@ public class PubController {
                     """
     )
     @DocResponses({
-            @DocResponse(responseCode = "200", description = "조회 성공"),
-            @DocResponse(responseCode = "401", description = "인증 필요"),
-            @DocResponse(responseCode = "404", description = "존재하지 않는 펍"),
-            @DocResponse(responseCode = "500", description = "서버 오류")
+            @DocResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PubDetailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 존재하지 않는 펍",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @GetMapping("/{pubId}")
     public ApiResponse<PubDetailResponse> getDetail(

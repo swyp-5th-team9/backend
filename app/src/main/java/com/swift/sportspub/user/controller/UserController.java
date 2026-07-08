@@ -1,16 +1,18 @@
 package com.swift.sportspub.user.controller;
 
+import com.swift.sportspub.common.response.ApiResponse;
+import com.swift.sportspub.common.swagger.ApiFailResponse;
+import com.swift.sportspub.common.swagger.DocResponse;
+import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.dto.WithdrawRequest;
 import com.swift.sportspub.user.service.UserService;
-import com.swift.sportspub.common.swagger.DocCommonErrorResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "User", description = "회원 API")
-@DocCommonErrorResponses
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -45,21 +46,68 @@ public class UserController {
                     이미 온보딩을 완료한 사용자가 다시 호출하면 409로 반환한다.
                     """
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "온보딩 성공"),
-            @ApiResponse(responseCode = "400", description = "입력값 오류 또는 존재하지 않는 teamId"),
-            @ApiResponse(responseCode = "401", description = "인증 필요"),
-            @ApiResponse(responseCode = "404", description = "사용자 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 온보딩 완료"),
-            @ApiResponse(responseCode = "500", description = "서버 오류")
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "온보딩 성공"),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — nickname 검증 실패, teamIds 검증 실패, 존재하지 않는 teamId",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "nickname 필수",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"nickname: nickname은 필수입니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "존재하지 않는 teamId",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"존재하지 않는 teamId가 포함되어 있습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 사용자 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"NOT_FOUND\",\"message\":\"사용자를 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "409",
+                    description = "CONFLICT — 이미 온보딩 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"CONFLICT\",\"message\":\"이미 온보딩이 완료된 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @PostMapping("/me/onboarding")
-    public com.swift.sportspub.common.response.ApiResponse<Void> onboarding(
+    public ApiResponse<Void> onboarding(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody OnboardingRequest request
     ) {
         userService.onboarding(userId, request);
-        return com.swift.sportspub.common.response.ApiResponse.success();
+        return ApiResponse.success();
     }
 
     @Operation(
@@ -70,17 +118,43 @@ public class UserController {
                     favoriteTeams에는 저장된 선호 구단의 teamId와 teamName(구단 약칭)이 포함된다.
                     """
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
-            @ApiResponse(responseCode = "500", description = "서버 오류")
+    @DocResponses({
+            @DocResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 사용자 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"NOT_FOUND\",\"message\":\"사용자를 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @GetMapping("/me")
-    public com.swift.sportspub.common.response.ApiResponse<UserResponse> getMyInfo(
+    public ApiResponse<UserResponse> getMyInfo(
             @AuthenticationPrincipal Long userId
     ) {
-        return com.swift.sportspub.common.response.ApiResponse.success(userService.getMyInfo(userId));
+        return ApiResponse.success(userService.getMyInfo(userId));
     }
 
     @Operation(
@@ -89,9 +163,10 @@ public class UserController {
                     현재 로그인한 사용자의 회원 정보를 수정한다.
                     multipart/form-data로 nickname, teamIds, profileImage를 전달할 수 있다.
                     nickname은 2~20자까지 입력할 수 있고, teamIds는 최대 3개까지 선택할 수 있다.
+                    teamIds는 teamIds=1&teamIds=3 형태로 반복 전달한다.
                     profileImage는 선택 값이며 최대 1장, 파일당 10MB 이하, jpeg/png/gif/webp만 허용한다.
                     미전달 필드는 기존 값을 유지한다. profileImage를 빈 파일로 전달해도 기존 이미지를 유지한다.
-                    teamIds를 전달하면 기존 선호 구단을 새 목록으로 교체하며, 빈 배열([]) 전달 시 전체 해제한다.
+                    teamIds를 전달하면 기존 선호 구단을 새 목록으로 교체하며, 빈 값 없이 전달 시 전체 해제한다.
                     nickname만 전달하면 선호 구단·프로필 이미지는 변경되지 않는다.
                     teamIds에 중복 ID가 포함되면 중복을 제거한 뒤 저장한다.
                     존재하지 않는 teamId는 400으로 반환한다.
@@ -104,20 +179,62 @@ public class UserController {
                     )
             )
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "수정 성공"),
-            @ApiResponse(responseCode = "400", description = "입력값 오류, 이미지 형식/용량 오류, 또는 존재하지 않는 teamId"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
-            @ApiResponse(responseCode = "500", description = "서버 오류")
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "수정 성공"),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — nickname/teamIds 검증, 이미지 형식·용량, multipart 오류, 존재하지 않는 teamId",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "프로필 이미지 용량 초과",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"프로필 이미지 용량(10MB) 초과\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "지원하지 않는 이미지 형식",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"지원하지 않는 이미지 형식\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "존재하지 않는 teamId",
+                                            value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"존재하지 않는 teamId가 포함되어 있습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 사용자 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"NOT_FOUND\",\"message\":\"사용자를 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public com.swift.sportspub.common.response.ApiResponse<Void> updateMyInfo(
+    public ApiResponse<Void> updateMyInfo(
             @AuthenticationPrincipal Long userId,
             @Valid @ModelAttribute UpdateUserRequest request
     ) {
         userService.updateMyInfo(userId, request);
-        return com.swift.sportspub.common.response.ApiResponse.success();
+        return ApiResponse.success();
     }
 
     @Operation(
@@ -131,19 +248,50 @@ public class UserController {
                     MVP에서는 동일 OAuth 계정으로 재로그인하면 기존 계정이 복구된다.
                     """
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "탈퇴 성공"),
-            @ApiResponse(responseCode = "400", description = "입력값 오류"),
-            @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
-            @ApiResponse(responseCode = "500", description = "서버 오류")
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "탈퇴 성공"),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — reasonCode/detail 검증 실패",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"reasonCode: reasonCode는 필수입니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 사용자 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"NOT_FOUND\",\"message\":\"사용자를 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
     })
     @DeleteMapping("/me")
-    public com.swift.sportspub.common.response.ApiResponse<Void> withdraw(
+    public ApiResponse<Void> withdraw(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody WithdrawRequest request
     ) {
         userService.withdraw(userId, request);
-        return com.swift.sportspub.common.response.ApiResponse.success();
+        return ApiResponse.success();
     }
 }

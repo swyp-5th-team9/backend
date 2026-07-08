@@ -20,7 +20,7 @@ public record ApiFailResponse(
         )
         String errorCode,
 
-        @Schema(description = "에러 메시지", example = "리소스를 찾을 수 없습니다.")
+        @Schema(description = "에러 메시지 (API·상황별로 상이)", example = "리소스를 찾을 수 없습니다.")
         String message
 ) {
 }
