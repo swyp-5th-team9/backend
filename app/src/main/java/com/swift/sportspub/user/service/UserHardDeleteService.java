@@ -4,6 +4,7 @@ import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.repository.UserRepository;
 import com.swift.sportspub.user.storage.UserProfileImageStorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * 탈퇴 보관 기간 경과 회원의 users row 및 연관 데이터 물리 삭제.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserHardDeleteService {
@@ -22,8 +24,19 @@ public class UserHardDeleteService {
 
     @Transactional
     public void hardDelete(User user) {
-        profileImageStorageService.deleteByUrlIfPresent(user.getProfileImageUrl());
+        Long userId = user.getUserId();
+        String profileImageUrl = user.getProfileImageUrl();
+
         userRepository.delete(user);
+        deleteProfileImageSafely(userId, profileImageUrl);
+    }
+
+    private void deleteProfileImageSafely(Long userId, String profileImageUrl) {
+        try {
+            profileImageStorageService.deleteByUrlIfPresent(profileImageUrl);
+        } catch (Exception e) {
+            log.warn("프로필 이미지 S3 삭제 실패 — userId={}, url={}", userId, profileImageUrl, e);
+        }
     }
 
     @Transactional
