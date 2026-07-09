@@ -6,13 +6,12 @@ import com.swift.sportspub.common.response.ApiResponse;
 import com.swift.sportspub.common.swagger.ApiFailResponse;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
-import com.swift.sportspub.pub.dto.BusinessDayFilter;
 import com.swift.sportspub.pub.dto.PubDetailResponse;
+import com.swift.sportspub.pub.dto.PubFilterParams;
 import com.swift.sportspub.pub.dto.PubListResponse;
 import com.swift.sportspub.pub.dto.PubListSearchCondition;
 import com.swift.sportspub.pub.dto.PubMapResponse;
 import com.swift.sportspub.pub.dto.PubMapSearchCondition;
-import com.swift.sportspub.pub.entity.CapacityRange;
 import com.swift.sportspub.pub.service.PubQueryService;
 import com.swift.sportspub.pub.service.RegionFilter;
 import com.swift.sportspub.pub.service.RegionResolver;
@@ -22,6 +21,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Tag(name = "Pub", description = "펍 조회 API")
 @RestController
@@ -80,35 +79,7 @@ public class PubController {
             @Parameter(description = "이름/주소 ILIKE 검색", example = "치어스")
             @RequestParam(required = false) String keyword,
 
-            @Parameter(description = "상영 구단 ID (단일, 호환용)", example = "1")
-            @RequestParam(required = false) Long teamId,
-
-            @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
-            @RequestParam(required = false) List<Long> teamIds,
-
-            @Parameter(description = "지역 — 자치구 코드/광역 코드/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
-            @RequestParam(required = false) String region,
-
-            @Parameter(description = "시설 코드 (AND, 예: GROUP_SEAT, PARKING)")
-            @RequestParam(required = false) List<String> facilityCodes,
-
-            @Parameter(description = "스타일 코드 (AND, 예: BIG_SCREEN)")
-            @RequestParam(required = false) List<String> styleCodes,
-
-            @Parameter(description = "테마 코드 (AND, 예: SPACIOUS_VIEW)")
-            @RequestParam(required = false) List<String> themeCodes,
-
-            @Parameter(description = "음식 코드 (AND, 예: CHICKEN, BEER)")
-            @RequestParam(required = false) List<String> foodCodes,
-
-            @Parameter(description = "수용 규모", example = "R_50_100")
-            @RequestParam(required = false) CapacityRange capacityRange,
-
-            @Parameter(description = "지금 영업중인 펍만 (true)")
-            @RequestParam(required = false) Boolean openNow,
-
-            @Parameter(description = "영업요일 — EVERYDAY/WEEKDAY/WEEKEND/MON..SUN (선택 요일 전부 영업)")
-            @RequestParam(required = false) BusinessDayFilter businessDay,
+            @ParameterObject PubFilterParams filter,
 
             @Parameter(description = "페이지 (0부터)", example = "0")
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -119,25 +90,14 @@ public class PubController {
         if (page < 0 || size <= 0 || size > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        RegionFilter regionFilter = RegionResolver.resolve(region);
-        List<Long> mergedTeamIds = mergeTeamIds(teamId, teamIds);
+        RegionFilter regionFilter = RegionResolver.resolve(filter.region());
         PubListSearchCondition condition = new PubListSearchCondition(
-                keyword, mergedTeamIds, regionFilter.regions(), regionFilter.subRegion(),
-                facilityCodes, styleCodes, themeCodes, foodCodes,
-                capacityRange, openNow, businessDay,
+                keyword, filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
+                filter.capacityRange(), filter.openNow(), filter.businessDay(),
                 page, size == 0 ? DEFAULT_PAGE_SIZE : size
         );
         return ApiResponse.success(pubQueryService.findList(condition));
-    }
-
-    private List<Long> mergeTeamIds(Long teamId, List<Long> teamIds) {
-        if (teamIds != null && !teamIds.isEmpty()) {
-            return teamIds;
-        }
-        if (teamId != null) {
-            return List.of(teamId);
-        }
-        return List.of();
     }
 
     @Operation(
@@ -180,43 +140,14 @@ public class PubController {
             @Parameter(description = "북동쪽 위도", example = "37.51") @RequestParam BigDecimal neLat,
             @Parameter(description = "북동쪽 경도", example = "127.04") @RequestParam BigDecimal neLng,
 
-            @Parameter(description = "상영 구단 ID (단일, 호환용)", example = "1")
-            @RequestParam(required = false) Long teamId,
-
-            @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
-            @RequestParam(required = false) List<Long> teamIds,
-
-            @Parameter(description = "지역 — 자치구 코드/광역 코드/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
-            @RequestParam(required = false) String region,
-
-            @Parameter(description = "시설 코드 (AND, 예: GROUP_SEAT, PARKING)")
-            @RequestParam(required = false) List<String> facilityCodes,
-
-            @Parameter(description = "스타일 코드 (AND, 예: BIG_SCREEN)")
-            @RequestParam(required = false) List<String> styleCodes,
-
-            @Parameter(description = "테마 코드 (AND, 예: SPACIOUS_VIEW)")
-            @RequestParam(required = false) List<String> themeCodes,
-
-            @Parameter(description = "음식 코드 (AND, 예: CHICKEN, BEER)")
-            @RequestParam(required = false) List<String> foodCodes,
-
-            @Parameter(description = "수용 규모", example = "R_50_100")
-            @RequestParam(required = false) CapacityRange capacityRange,
-
-            @Parameter(description = "지금 영업중인 펍만 (true)")
-            @RequestParam(required = false) Boolean openNow,
-
-            @Parameter(description = "영업요일 — EVERYDAY/WEEKDAY/WEEKEND/MON..SUN (선택 요일 전부 영업)")
-            @RequestParam(required = false) BusinessDayFilter businessDay
+            @ParameterObject PubFilterParams filter
     ) {
-        RegionFilter regionFilter = RegionResolver.resolve(region);
-        List<Long> mergedTeamIds = mergeTeamIds(teamId, teamIds);
+        RegionFilter regionFilter = RegionResolver.resolve(filter.region());
         PubMapSearchCondition condition = new PubMapSearchCondition(
                 swLat, swLng, neLat, neLng,
-                mergedTeamIds, regionFilter.regions(), regionFilter.subRegion(),
-                facilityCodes, styleCodes, themeCodes, foodCodes,
-                capacityRange, openNow, businessDay
+                filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
+                filter.capacityRange(), filter.openNow(), filter.businessDay()
         );
         return ApiResponse.success(pubQueryService.findMapMarkers(condition));
     }
