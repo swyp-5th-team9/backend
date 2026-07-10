@@ -6,8 +6,10 @@ import com.swift.sportspub.pub.entity.Region;
 import com.swift.sportspub.pub.entity.SubRegion;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class RegionResolver {
 
@@ -24,6 +26,23 @@ public final class RegionResolver {
     );
 
     private RegionResolver() {
+    }
+
+    public static RegionFilter resolve(List<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return RegionFilter.empty();
+        }
+        Set<Region> mergedRegions = new LinkedHashSet<>();
+        Set<SubRegion> mergedSubs = new LinkedHashSet<>();
+        for (String code : codes) {
+            RegionFilter partial = resolve(code);
+            mergedRegions.addAll(partial.regions());
+            if (partial.subRegion() != null) {
+                mergedSubs.add(partial.subRegion());
+            }
+        }
+        SubRegion sub = mergedSubs.size() == 1 ? mergedSubs.iterator().next() : null;
+        return new RegionFilter(List.copyOf(mergedRegions), sub);
     }
 
     public static RegionFilter resolve(String code) {

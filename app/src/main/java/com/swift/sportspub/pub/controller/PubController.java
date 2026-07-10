@@ -46,10 +46,11 @@ public class PubController {
             description = """
                     리스트 화면용 펍 목록.
                     필터: 키워드(이름/주소 ILIKE) · 응원 구단(teamId 단일 또는 teamIds 다중 OR) ·
-                    지역(region — 자치구 코드 또는 광역 코드) · 시설/스타일/테마/음식 코드(각 AND 매칭) ·
+                    지역(region 단일 또는 regions 다중 OR — 자치구/광역/sub 코드) ·
+                    시설/스타일/테마/음식 코드(각 AND 매칭) ·
                     수용 규모 · 영업중 여부(openNow) · 영업요일(businessDay — 선택 요일 전부 영업).
                     페이징(0부터, 기본 20·최대 50), 정렬 favorite_count DESC.
-                    teamId 와 teamIds 동시 전송 시 teamIds 우선.
+                    teamId/teamIds, region/regions 동시 전송 시 다중(복수형)이 우선.
                     """
     )
     @DocResponses({
@@ -90,7 +91,7 @@ public class PubController {
         if (page < 0 || size <= 0 || size > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        RegionFilter regionFilter = RegionResolver.resolve(filter.region());
+        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
         PubListSearchCondition condition = new PubListSearchCondition(
                 keyword, filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
                 filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
@@ -105,10 +106,11 @@ public class PubController {
             description = """
                     지도 화면에서 보이는 BBox 안의 펍 마커를 조회한다.
                     페이징 없이 좌표·이름·상태·찜 수·태그 필드(상영 구단·시설·스타일·테마·음식·썸네일)를 포함한 응답.
-                    필터: 응원 구단(teamId 단일 또는 teamIds 다중 OR) · 지역(region — 자치구/광역/sub 코드) ·
+                    필터: 응원 구단(teamId 단일 또는 teamIds 다중 OR) ·
+                    지역(region 단일 또는 regions 다중 OR — 자치구/광역/sub 코드) ·
                     시설/스타일/테마/음식 코드(각 AND 매칭) · 수용 규모 · 영업중 여부(openNow) ·
                     영업요일(businessDay — 선택 요일 전부 영업).
-                    teamId 와 teamIds 동시 전송 시 teamIds 우선.
+                    teamId/teamIds, region/regions 동시 전송 시 다중(복수형)이 우선.
                     """
     )
     @DocResponses({
@@ -142,7 +144,7 @@ public class PubController {
 
             @ParameterObject PubFilterParams filter
     ) {
-        RegionFilter regionFilter = RegionResolver.resolve(filter.region());
+        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
         PubMapSearchCondition condition = new PubMapSearchCondition(
                 swLat, swLng, neLat, neLng,
                 filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
