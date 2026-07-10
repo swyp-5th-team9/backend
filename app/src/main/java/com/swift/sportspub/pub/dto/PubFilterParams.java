@@ -12,8 +12,11 @@ public record PubFilterParams(
         @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
         List<Long> teamIds,
 
-        @Parameter(description = "지역 — 자치구 코드/광역 코드/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
+        @Parameter(description = "지역 코드 (단일, 호환용) — 자치구/광역/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
         String region,
+
+        @Parameter(description = "지역 코드 다중 (OR 매칭) — 자치구/광역/sub 코드")
+        List<String> regions,
 
         @Parameter(description = "시설 코드 (AND, 예: GROUP_SEAT, PARKING)")
         List<String> facilityCodes,
@@ -42,6 +45,16 @@ public record PubFilterParams(
         }
         if (teamId != null) {
             return List.of(teamId);
+        }
+        return List.of();
+    }
+
+    public List<String> mergedRegions() {
+        if (regions != null && !regions.isEmpty()) {
+            return regions;
+        }
+        if (region != null && !region.isBlank()) {
+            return List.of(region);
         }
         return List.of();
     }
