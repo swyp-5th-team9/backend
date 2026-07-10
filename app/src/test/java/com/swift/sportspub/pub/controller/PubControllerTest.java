@@ -150,6 +150,71 @@ class PubControllerTest {
     }
 
     @Test
+    void getList_regionsMulti_unionRegions() throws Exception {
+        given(pubQueryService.findList(any())).willReturn(PubListResponse.of(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/v1/pubs")
+                        .param("regions", "MAPO")
+                        .param("regions", "SEONGDONG"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PubListSearchCondition> captor = ArgumentCaptor.forClass(PubListSearchCondition.class);
+        org.mockito.Mockito.verify(pubQueryService).findList(captor.capture());
+        PubListSearchCondition condition = captor.getValue();
+        assertThat(condition.regions()).containsExactly(Region.MAPO, Region.SEONGDONG);
+        assertThat(condition.subRegion()).isNull();
+    }
+
+    @Test
+    void getList_regionsPreferredOverRegion() throws Exception {
+        given(pubQueryService.findList(any())).willReturn(PubListResponse.of(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/v1/pubs")
+                        .param("region", "GANGNAM")
+                        .param("regions", "MAPO")
+                        .param("regions", "SEONGDONG"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PubListSearchCondition> captor = ArgumentCaptor.forClass(PubListSearchCondition.class);
+        org.mockito.Mockito.verify(pubQueryService).findList(captor.capture());
+        assertThat(captor.getValue().regions()).containsExactly(Region.MAPO, Region.SEONGDONG);
+    }
+
+    @Test
+    void getList_multipleSubRegions_subNullifiedButRegionsExpanded() throws Exception {
+        given(pubQueryService.findList(any())).willReturn(PubListResponse.of(List.of(), 0, 20, 0));
+
+        mockMvc.perform(get("/api/v1/pubs")
+                        .param("regions", "JAMSIL")
+                        .param("regions", "HONGDAE_HAPJEONG"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PubListSearchCondition> captor = ArgumentCaptor.forClass(PubListSearchCondition.class);
+        org.mockito.Mockito.verify(pubQueryService).findList(captor.capture());
+        PubListSearchCondition condition = captor.getValue();
+        assertThat(condition.regions()).containsExactly(Region.SONGPA, Region.MAPO);
+        assertThat(condition.subRegion()).isNull();
+    }
+
+    @Test
+    void getMapMarkers_regionsMulti() throws Exception {
+        given(pubQueryService.findMapMarkers(any())).willReturn(PubMapResponse.of(List.of()));
+
+        mockMvc.perform(get("/api/v1/pubs/map")
+                        .param("swLat", "37.49")
+                        .param("swLng", "127.02")
+                        .param("neLat", "37.51")
+                        .param("neLng", "127.04")
+                        .param("regions", "MAPO")
+                        .param("regions", "SEONGDONG"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PubMapSearchCondition> captor = ArgumentCaptor.forClass(PubMapSearchCondition.class);
+        org.mockito.Mockito.verify(pubQueryService).findMapMarkers(captor.capture());
+        assertThat(captor.getValue().regions()).containsExactly(Region.MAPO, Region.SEONGDONG);
+    }
+
+    @Test
     void getMapMarkers_bindsFilterAndBBox() throws Exception {
         given(pubQueryService.findMapMarkers(any())).willReturn(PubMapResponse.of(List.of()));
 
