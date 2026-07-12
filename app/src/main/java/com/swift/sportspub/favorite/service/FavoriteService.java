@@ -80,7 +80,15 @@ public class FavoriteService {
             );
         }
 
+        List<Long> pubIds = ownedFavorites.stream()
+                .map(Favorite::getPubId)
+                .toList();
+
         favoriteRepository.deleteAllInBatch(ownedFavorites);
+
+        for (Long pubId : pubIds) {
+            pubRepository.decrementFavoriteCount(pubId);
+        }
     }
 
     private List<Long> toDistinctFavoriteIds(List<Long> favoriteIds) {
