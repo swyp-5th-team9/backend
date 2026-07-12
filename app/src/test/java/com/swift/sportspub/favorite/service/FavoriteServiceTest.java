@@ -2,6 +2,7 @@ package com.swift.sportspub.favorite.service;
 
 import com.swift.sportspub.common.exception.BusinessException;
 import com.swift.sportspub.common.exception.ErrorCode;
+import com.swift.sportspub.favorite.dto.FavoriteDeleteRequest;
 import com.swift.sportspub.favorite.dto.FavoriteListResponse;
 import com.swift.sportspub.favorite.entity.Favorite;
 import com.swift.sportspub.favorite.repository.FavoriteRepository;
@@ -30,6 +31,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -168,6 +170,7 @@ class FavoriteServiceTest {
         verify(favoriteRepository).save(captor.capture());
         assertThat(captor.getValue().getPubId()).isEqualTo(10L);
         assertThat(captor.getValue().getUser()).isEqualTo(user);
+        verify(pubRepository).incrementFavoriteCount(10L);
     }
 
     @Test
@@ -178,6 +181,7 @@ class FavoriteServiceTest {
                 .isInstanceOf(UserNotFoundException.class);
 
         verify(favoriteRepository, never()).save(any());
+        verify(pubRepository, never()).incrementFavoriteCount(any());
     }
 
     @Test
@@ -196,6 +200,7 @@ class FavoriteServiceTest {
                 });
 
         verify(favoriteRepository, never()).save(any());
+        verify(pubRepository, never()).incrementFavoriteCount(any());
     }
 
     @Test
@@ -225,6 +230,7 @@ class FavoriteServiceTest {
                 });
 
         verify(favoriteRepository, never()).save(any());
+        verify(pubRepository, never()).incrementFavoriteCount(any());
     }
 
     @Test
@@ -256,5 +262,64 @@ class FavoriteServiceTest {
                 });
 
         verify(favoriteRepository, never()).save(any());
+        verify(pubRepository, never()).incrementFavoriteCount(any());
+    }
+
+    @Test
+    void deleteFavorites_decrementsFavoriteCountForEachPub() {
+        User user = User.builder()
+                .oauthProvider(OAuthProvider.KAKAO)
+                .oauthId("oauth-1")
+                .build();
+        Pub pub1 = Pub.builder()
+                .name("펍 A")
+                .address("서울")
+                .region(Region.MAPO)
+                .latitude(new BigDecimal("37.5563000"))
+                .longitude(new BigDecimal("126.9226000"))
+                .status(PubStatus.OPEN)
+                .build();
+        ReflectionTestUtils.setField(pub1, "pubId", 10L);
+        Pub pub2 = Pub.builder()
+                .name("펍 B")
+                .address("서울")
+                .region(Region.MAPO)
+                .latitude(new BigDecimal("37.5563000"))
+                .longitude(new BigDecimal("126.9226000"))
+                .status(PubStatus.OPEN)
+                .build();
+        ReflectionTestUtils.setField(pub2, "pubId", 20L);
+
+        Favorite favorite1 = Favorite.builder().user(user).pub(pub1).build();
+        ReflectionTestUtils.setField(favorite1, "favoriteId", 1L);
+        ReflectionTestUtils.setField(favorite1, "pubId", 10L);
+        Favorite favorite2 = Favorite.builder().user(user).pub(pub2).build();
+        ReflectionTestUtils.setField(favorite2, "favoriteId", 2L);
+        ReflectionTestUtils.setField(favorite2, "pubId", 20L);
+
+        given(favoriteRepository.findByFavoriteIdInAndUserUserId(eq(List.of(1L, 2L)), eq(1L)))
+                .willReturn(List.of(favorite1, favorite2));
+
+        favoriteService.deleteFavorites(1L, new FavoriteDeleteRequest(List.of(1L, 2L)));
+
+        verify(favoriteRepository).deleteAllInBatch(List.of(favorite1, favorite2));
+        verify(pubRepository).decrementFavoriteCount(10L);
+        verify(pubRepository).decrementFavoriteCount(20L);
+    }
+
+    @Test
+    void deleteFavorites_whenNotOwned_doesNotDecrementFavoriteCount() {
+        given(favoriteRepository.findByFavoriteIdInAndUserUserId(eq(List.of(99L)), eq(1L)))
+                .willReturn(List.of());
+
+        assertThatThrownBy(() -> favoriteService.deleteFavorites(1L, new FavoriteDeleteRequest(List.of(99L))))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> {
+                    BusinessException businessException = (BusinessException) ex;
+                    assertThat(businessException.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+                });
+
+        verify(favoriteRepository, never()).deleteAllInBatch(any());
+        verify(pubRepository, never()).decrementFavoriteCount(any());
     }
 }
