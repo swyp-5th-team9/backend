@@ -106,6 +106,7 @@ public class FavoriteService {
                         .pub(pub)
                         .build()
         );
+        pubRepository.incrementFavoriteCount(pubId);
         return saved.getFavoriteId();
     }
 
