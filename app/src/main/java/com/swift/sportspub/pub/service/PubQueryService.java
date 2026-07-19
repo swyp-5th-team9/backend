@@ -6,6 +6,7 @@ import com.swift.sportspub.pub.dto.BusinessHourItem;
 import com.swift.sportspub.pub.dto.BusinessStatus;
 import com.swift.sportspub.pub.dto.MenuItem;
 import com.swift.sportspub.pub.dto.PubDetailResponse;
+import com.swift.sportspub.pub.dto.PubFilterParams;
 import com.swift.sportspub.pub.dto.PubImageItem;
 import com.swift.sportspub.pub.dto.PubListItem;
 import com.swift.sportspub.pub.dto.PubListResponse;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,15 +62,23 @@ public class PubQueryService {
     private final MenuRepository menuRepository;
 
     @Transactional(readOnly = true)
-    public PubMapResponse findMapMarkers(PubMapSearchCondition condition) {
-        if (condition.swLat() == null || condition.swLng() == null
-                || condition.neLat() == null || condition.neLng() == null) {
+    public PubMapResponse findMapMarkers(BigDecimal swLat, BigDecimal swLng,
+                                         BigDecimal neLat, BigDecimal neLng,
+                                         PubFilterParams filter) {
+        if (swLat == null || swLng == null || neLat == null || neLng == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        if (condition.swLat().compareTo(condition.neLat()) > 0
-                || condition.swLng().compareTo(condition.neLng()) > 0) {
+        if (swLat.compareTo(neLat) > 0 || swLng.compareTo(neLng) > 0) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
+
+        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
+        PubMapSearchCondition condition = new PubMapSearchCondition(
+                swLat, swLng, neLat, neLng,
+                filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
+                filter.capacityRange(), filter.openNow(), filter.businessDay()
+        );
 
         List<Long> pubIds = pubRepository.searchMapPubIds(condition);
         if (pubIds.isEmpty()) {
@@ -106,7 +116,15 @@ public class PubQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PubListResponse findList(PubListSearchCondition condition) {
+    public PubListResponse findList(String keyword, PubFilterParams filter, int page, int size) {
+        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
+        PubListSearchCondition condition = new PubListSearchCondition(
+                keyword, filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
+                filter.capacityRange(), filter.openNow(), filter.businessDay(),
+                page, size
+        );
+
         PubRepositoryCustom.PubIdPage idPage = pubRepository.searchPubIds(condition);
         List<Long> pubIds = idPage.pubIds();
 
