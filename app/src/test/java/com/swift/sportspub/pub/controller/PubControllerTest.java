@@ -56,7 +56,7 @@ class PubControllerTest {
                         .param("keyword", "치어스")
                         .param("teamIds", "1")
                         .param("teamIds", "2")
-                        .param("region", "GANGNAM")
+                        .param("regions", "GANGNAM")
                         .param("facilityCodes", "PARKING")
                         .param("facilityCodes", "GROUP_SEAT")
                         .param("styleCodes", "BIG_SCREEN")
@@ -74,8 +74,8 @@ class PubControllerTest {
                 .findList(eq("치어스"), filterCaptor.capture(), eq(2), eq(15));
         PubFilterParams filter = filterCaptor.getValue();
 
-        assertThat(filter.mergedTeamIds()).containsExactly(1L, 2L);
-        assertThat(filter.mergedRegions()).containsExactly("GANGNAM");
+        assertThat(filter.teamIds()).containsExactly(1L, 2L);
+        assertThat(filter.regions()).containsExactly("GANGNAM");
         assertThat(filter.facilityCodes()).containsExactly("PARKING", "GROUP_SEAT");
         assertThat(filter.styleCodes()).containsExactly("BIG_SCREEN");
         assertThat(filter.themeCodes()).containsExactly("SPACIOUS_VIEW");
@@ -83,37 +83,6 @@ class PubControllerTest {
         assertThat(filter.capacityRange()).isEqualTo(CapacityRange.R_50_100);
         assertThat(filter.openNow()).isTrue();
         assertThat(filter.businessDay()).isEqualTo(BusinessDayFilter.WEEKEND);
-    }
-
-    @Test
-    void getList_teamIdsPreferredOverTeamId() throws Exception {
-        given(pubQueryService.findList(any(), any(), anyInt(), anyInt()))
-                .willReturn(PubListResponse.of(List.of(), 0, 20, 0));
-
-        mockMvc.perform(get("/api/v1/pubs")
-                        .param("teamId", "99")
-                        .param("teamIds", "1")
-                        .param("teamIds", "2"))
-                .andExpect(status().isOk());
-
-        ArgumentCaptor<PubFilterParams> captor = ArgumentCaptor.forClass(PubFilterParams.class);
-        org.mockito.Mockito.verify(pubQueryService)
-                .findList(any(), captor.capture(), anyInt(), anyInt());
-        assertThat(captor.getValue().mergedTeamIds()).containsExactly(1L, 2L);
-    }
-
-    @Test
-    void getList_teamIdSingle_wrappedIntoList() throws Exception {
-        given(pubQueryService.findList(any(), any(), anyInt(), anyInt()))
-                .willReturn(PubListResponse.of(List.of(), 0, 20, 0));
-
-        mockMvc.perform(get("/api/v1/pubs").param("teamId", "7"))
-                .andExpect(status().isOk());
-
-        ArgumentCaptor<PubFilterParams> captor = ArgumentCaptor.forClass(PubFilterParams.class);
-        org.mockito.Mockito.verify(pubQueryService)
-                .findList(any(), captor.capture(), anyInt(), anyInt());
-        assertThat(captor.getValue().mergedTeamIds()).containsExactly(7L);
     }
 
     @Test
@@ -143,24 +112,7 @@ class PubControllerTest {
         ArgumentCaptor<PubFilterParams> captor = ArgumentCaptor.forClass(PubFilterParams.class);
         org.mockito.Mockito.verify(pubQueryService)
                 .findList(any(), captor.capture(), anyInt(), anyInt());
-        assertThat(captor.getValue().mergedRegions()).containsExactly("MAPO", "SEONGDONG");
-    }
-
-    @Test
-    void getList_regionsPreferredOverRegion() throws Exception {
-        given(pubQueryService.findList(any(), any(), anyInt(), anyInt()))
-                .willReturn(PubListResponse.of(List.of(), 0, 20, 0));
-
-        mockMvc.perform(get("/api/v1/pubs")
-                        .param("region", "GANGNAM")
-                        .param("regions", "MAPO")
-                        .param("regions", "SEONGDONG"))
-                .andExpect(status().isOk());
-
-        ArgumentCaptor<PubFilterParams> captor = ArgumentCaptor.forClass(PubFilterParams.class);
-        org.mockito.Mockito.verify(pubQueryService)
-                .findList(any(), captor.capture(), anyInt(), anyInt());
-        assertThat(captor.getValue().mergedRegions()).containsExactly("MAPO", "SEONGDONG");
+        assertThat(captor.getValue().regions()).containsExactly("MAPO", "SEONGDONG");
     }
 
     @Test
@@ -174,7 +126,7 @@ class PubControllerTest {
                         .param("neLat", "37.51")
                         .param("neLng", "127.04")
                         .param("teamIds", "1")
-                        .param("region", "GANGNAM")
+                        .param("regions", "GANGNAM")
                         .param("facilityCodes", "PARKING")
                         .param("openNow", "true")
                         .param("businessDay", "MON"))
@@ -191,8 +143,8 @@ class PubControllerTest {
         assertThat(swLatCap.getValue().doubleValue()).isEqualTo(37.49);
         assertThat(neLngCap.getValue().doubleValue()).isEqualTo(127.04);
         PubFilterParams filter = filterCap.getValue();
-        assertThat(filter.mergedTeamIds()).containsExactly(1L);
-        assertThat(filter.mergedRegions()).containsExactly("GANGNAM");
+        assertThat(filter.teamIds()).containsExactly(1L);
+        assertThat(filter.regions()).containsExactly("GANGNAM");
         assertThat(filter.facilityCodes()).containsExactly("PARKING");
         assertThat(filter.openNow()).isTrue();
         assertThat(filter.businessDay()).isEqualTo(BusinessDayFilter.MON);
@@ -215,6 +167,6 @@ class PubControllerTest {
         ArgumentCaptor<PubFilterParams> captor = ArgumentCaptor.forClass(PubFilterParams.class);
         org.mockito.Mockito.verify(pubQueryService).findMapMarkers(
                 any(), any(), any(), any(), captor.capture());
-        assertThat(captor.getValue().mergedRegions()).containsExactly("MAPO", "SEONGDONG");
+        assertThat(captor.getValue().regions()).containsExactly("MAPO", "SEONGDONG");
     }
 }

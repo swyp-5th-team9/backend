@@ -72,10 +72,10 @@ public class PubQueryService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
-        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
+        RegionFilter regionFilter = RegionResolver.resolve(filter.regions());
         PubMapSearchCondition condition = new PubMapSearchCondition(
                 swLat, swLng, neLat, neLng,
-                filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                filter.teamIds(), regionFilter.regions(), regionFilter.subRegion(),
                 filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
                 filter.capacityRange(), filter.openNow(), filter.businessDay()
         );
@@ -117,9 +117,9 @@ public class PubQueryService {
 
     @Transactional(readOnly = true)
     public PubListResponse findList(String keyword, PubFilterParams filter, int page, int size) {
-        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
+        RegionFilter regionFilter = RegionResolver.resolve(filter.regions());
         PubListSearchCondition condition = new PubListSearchCondition(
-                keyword, filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                keyword, filter.teamIds(), regionFilter.regions(), regionFilter.subRegion(),
                 filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
                 filter.capacityRange(), filter.openNow(), filter.businessDay(),
                 page, size
