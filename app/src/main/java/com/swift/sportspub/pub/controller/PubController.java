@@ -9,12 +9,8 @@ import com.swift.sportspub.common.swagger.DocResponses;
 import com.swift.sportspub.pub.dto.PubDetailResponse;
 import com.swift.sportspub.pub.dto.PubFilterParams;
 import com.swift.sportspub.pub.dto.PubListResponse;
-import com.swift.sportspub.pub.dto.PubListSearchCondition;
 import com.swift.sportspub.pub.dto.PubMapResponse;
-import com.swift.sportspub.pub.dto.PubMapSearchCondition;
 import com.swift.sportspub.pub.service.PubQueryService;
-import com.swift.sportspub.pub.service.RegionFilter;
-import com.swift.sportspub.pub.service.RegionResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -37,7 +33,6 @@ import java.math.BigDecimal;
 public class PubController {
 
     private static final int MAX_PAGE_SIZE = 50;
-    private static final int DEFAULT_PAGE_SIZE = 20;
 
     private final PubQueryService pubQueryService;
 
@@ -91,14 +86,7 @@ public class PubController {
         if (page < 0 || size <= 0 || size > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
-        PubListSearchCondition condition = new PubListSearchCondition(
-                keyword, filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
-                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
-                filter.capacityRange(), filter.openNow(), filter.businessDay(),
-                page, size == 0 ? DEFAULT_PAGE_SIZE : size
-        );
-        return ApiResponse.success(pubQueryService.findList(condition));
+        return ApiResponse.success(pubQueryService.findList(keyword, filter, page, size));
     }
 
     @Operation(
@@ -144,14 +132,7 @@ public class PubController {
 
             @ParameterObject PubFilterParams filter
     ) {
-        RegionFilter regionFilter = RegionResolver.resolve(filter.mergedRegions());
-        PubMapSearchCondition condition = new PubMapSearchCondition(
-                swLat, swLng, neLat, neLng,
-                filter.mergedTeamIds(), regionFilter.regions(), regionFilter.subRegion(),
-                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
-                filter.capacityRange(), filter.openNow(), filter.businessDay()
-        );
-        return ApiResponse.success(pubQueryService.findMapMarkers(condition));
+        return ApiResponse.success(pubQueryService.findMapMarkers(swLat, swLng, neLat, neLng, filter));
     }
 
     @Operation(
