@@ -14,6 +14,7 @@ import com.swift.sportspub.pub.dto.PubListSearchCondition;
 import com.swift.sportspub.pub.dto.PubMapMarker;
 import com.swift.sportspub.pub.dto.PubMapResponse;
 import com.swift.sportspub.pub.dto.PubMapSearchCondition;
+import com.swift.sportspub.pub.dto.PubSearchFilter;
 import com.swift.sportspub.pub.dto.PubSummary;
 import com.swift.sportspub.pub.dto.SupportedTeamDetail;
 import com.swift.sportspub.pub.dto.SupportedTeamSummary;
@@ -72,13 +73,8 @@ public class PubQueryService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
-        RegionFilter regionFilter = RegionResolver.resolve(filter.regions());
         PubMapSearchCondition condition = new PubMapSearchCondition(
-                swLat, swLng, neLat, neLng,
-                filter.teamIds(), regionFilter.regions(), regionFilter.subRegion(),
-                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
-                filter.capacityRange(), filter.openNow(), filter.businessDay()
-        );
+                swLat, swLng, neLat, neLng, buildSearchFilter(filter));
 
         List<Long> pubIds = pubRepository.searchMapPubIds(condition);
         if (pubIds.isEmpty()) {
@@ -117,13 +113,8 @@ public class PubQueryService {
 
     @Transactional(readOnly = true)
     public PubListResponse findList(String keyword, PubFilterParams filter, int page, int size) {
-        RegionFilter regionFilter = RegionResolver.resolve(filter.regions());
         PubListSearchCondition condition = new PubListSearchCondition(
-                keyword, filter.teamIds(), regionFilter.regions(), regionFilter.subRegion(),
-                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
-                filter.capacityRange(), filter.openNow(), filter.businessDay(),
-                page, size
-        );
+                keyword, buildSearchFilter(filter), page, size);
 
         PubRepositoryCustom.PubIdPage idPage = pubRepository.searchPubIds(condition);
         List<Long> pubIds = idPage.pubIds();
@@ -265,6 +256,15 @@ public class PubQueryService {
             summaries.add(PubSummary.of(pub, thumbnailByPubId.get(pubId)));
         }
         return summaries;
+    }
+
+    private PubSearchFilter buildSearchFilter(PubFilterParams filter) {
+        RegionFilter regionFilter = RegionResolver.resolve(filter.regions());
+        return new PubSearchFilter(
+                filter.teamIds(), regionFilter.regions(), regionFilter.subRegion(),
+                filter.facilityCodes(), filter.styleCodes(), filter.themeCodes(), filter.foodCodes(),
+                filter.capacityRange(), filter.openNow(), filter.businessDay()
+        );
     }
 
     private PubChildAggregates loadChildAggregates(List<Long> pubIds) {
