@@ -6,14 +6,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 
 public record PubFilterParams(
-        @Parameter(description = "상영 구단 ID (단일, 호환용)", example = "1")
-        Long teamId,
-
         @Parameter(description = "상영 구단 ID 다중 (OR 매칭, 입력 중 하나라도 응원)")
         List<Long> teamIds,
-
-        @Parameter(description = "지역 코드 (단일, 호환용) — 자치구/광역/sub 코드(JAMSIL, HONGDAE_HAPJEONG, SANGAM_MANGWON)", example = "GANGNAM")
-        String region,
 
         @Parameter(description = "지역 코드 다중 (OR 매칭) — 자치구/광역/sub 코드")
         List<String> regions,
@@ -39,23 +33,4 @@ public record PubFilterParams(
         @Parameter(description = "영업요일 — EVERYDAY/WEEKDAY/WEEKEND/MON..SUN (선택 요일 전부 영업)")
         BusinessDayFilter businessDay
 ) {
-    public List<Long> mergedTeamIds() {
-        if (teamIds != null && !teamIds.isEmpty()) {
-            return teamIds;
-        }
-        if (teamId != null) {
-            return List.of(teamId);
-        }
-        return List.of();
-    }
-
-    public List<String> mergedRegions() {
-        if (regions != null && !regions.isEmpty()) {
-            return regions;
-        }
-        if (region != null && !region.isBlank()) {
-            return List.of(region);
-        }
-        return List.of();
-    }
 }
