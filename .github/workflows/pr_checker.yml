@@ -28,5 +28,5 @@ jobs:
       - name: Build
         run: ./gradlew build -x test
 
-      - name: Run unit tests
+      - name: Run unit and migration verification tests
         run: ./gradlew test
