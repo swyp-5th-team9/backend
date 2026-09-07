@@ -1,7 +1,10 @@
 # sportspub-backend
 
 > KBO 중계 펍 탐색 서비스 **모여볼** 백엔드 레포
+
 > swyp 5기 9팀
+
+> 딥위키 문서자료 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/swyp-5th-team9/backend)
 
 ---
 
