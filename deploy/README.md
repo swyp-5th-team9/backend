@@ -2,6 +2,8 @@
 
 EC2 (Ubuntu 22.04) + RDS (PostgreSQL 16) + Nginx + DuckDNS + Let's Encrypt 기준.
 
+GitHub Actions 자동 배포는 `main` push 시 실행된다. `develop` push는 배포하지 않는다.
+
 > 크롤러(KBO 스케줄 동기화) 는 EC2 상주 대신 GitHub Actions cron 로 실행합니다 → [crawler-cron.md](./crawler-cron.md)
 
 ## 사전 준비

@@ -22,7 +22,7 @@ runner 에서 `./gradlew :crawler:bootRun` 을 `SPRING_PROFILES_ACTIVE=local` �
 `CrawlerRunner` 가 `@Profile("local")` 이라 부팅 즉시 `syncCurrentAndNextMonth()` 를 호출합니다.
 
 ## 실행 스텝 요약
-1. Checkout · JDK 21 setup
+1. Checkout **`main`** · JDK 21 setup
 2. AWS creds 로 SG 22 에 runner IP 등록
 3. EC2 로 SSH tunnel 백그라운드 오픈 (`-L 15432:RDS:5432`)
 4. `./gradlew :crawler:bootRun` 실행 (Playwright 가 첫 실행 시 chromium 자동 다운로드)
@@ -42,7 +42,7 @@ runner 에서 `./gradlew :crawler:bootRun` 을 `SPRING_PROFILES_ACTIVE=local` �
 ## 수동 실행
 
 ```bash
-gh workflow run crawler.yml --ref develop
+gh workflow run crawler.yml --ref main
 gh run watch --exit-status
 ```
 
