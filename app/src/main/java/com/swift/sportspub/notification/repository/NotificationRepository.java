@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -18,4 +19,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             ORDER BY n.createdAt DESC, n.notificationId DESC
             """)
     List<Notification> findByUserUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
+
+    Optional<Notification> findByNotificationIdAndUserUserId(Long notificationId, Long userId);
 }
