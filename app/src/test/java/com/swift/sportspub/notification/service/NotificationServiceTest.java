@@ -118,6 +118,47 @@ class NotificationServiceTest {
                 });
     }
 
+    @Test
+    void deleteNotification_whenOwned_deletesNotification() {
+        Notification notification = notification(
+                1L, 120L, 1L, 2L, LocalDateTime.of(2026, 8, 24, 11, 30)
+        );
+        ReflectionTestUtils.setField(notification.getUser(), "userId", 10L);
+        given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
+
+        notificationService.deleteNotification(10L, 1L);
+
+        verify(notificationRepository).delete(notification);
+    }
+
+    @Test
+    void deleteNotification_whenMissing_throwsNotFound() {
+        given(notificationRepository.findById(99L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.deleteNotification(10L, 99L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> {
+                    BusinessException businessException = (BusinessException) exception;
+                    assertThat(businessException.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+                    assertThat(businessException.getMessage()).isEqualTo("알림을 찾을 수 없습니다.");
+                });
+    }
+
+    @Test
+    void deleteNotification_whenNotOwned_throwsAccessDenied() {
+        Notification notification = notification(
+                1L, 120L, 1L, 2L, LocalDateTime.of(2026, 8, 24, 11, 30)
+        );
+        ReflectionTestUtils.setField(notification.getUser(), "userId", 20L);
+        given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
+
+        assertThatThrownBy(() -> notificationService.deleteNotification(10L, 1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> assertThat(
+                        ((BusinessException) exception).getErrorCode()
+                ).isEqualTo(ErrorCode.NOTIFICATION_ACCESS_DENIED));
+    }
+
     private Notification notification(
             Long notificationId,
             Long matchId,
