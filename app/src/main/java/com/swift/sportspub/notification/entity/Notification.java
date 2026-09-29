@@ -74,4 +74,8 @@ public class Notification extends BaseEntity {
         this.read = false;
         this.deepLinkType = deepLinkType;
     }
+
+    public void markAsRead() {
+        this.read = true;
+    }
 }

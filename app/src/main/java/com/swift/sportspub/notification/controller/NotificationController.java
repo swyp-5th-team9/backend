@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -65,5 +67,49 @@ public class NotificationController {
             @AuthenticationPrincipal Long userId
     ) {
         return ApiResponse.success(notificationService.getMyNotifications(userId));
+    }
+
+    @Operation(
+            summary = "알림 읽음 처리",
+            description = """
+                    현재 로그인한 사용자의 특정 알림을 읽음 상태로 변경한다.
+                    이미 읽은 알림을 다시 요청해도 성공한다.
+                    """
+    )
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "읽음 처리 성공"),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 존재하지 않거나 본인 알림이 아님",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"NOT_FOUND\",\"message\":\"존재하지 않거나 처리할 수 없는 알림입니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
+    })
+    @PatchMapping("/{notificationId}/read")
+    public ApiResponse<Void> readNotification(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long notificationId
+    ) {
+        notificationService.readNotification(userId, notificationId);
+        return ApiResponse.success();
     }
 }
