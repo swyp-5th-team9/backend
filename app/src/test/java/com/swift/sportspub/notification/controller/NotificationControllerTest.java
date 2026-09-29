@@ -31,6 +31,7 @@ import java.util.List;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -131,5 +132,38 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message")
                         .value("존재하지 않거나 처리할 수 없는 알림입니다."));
+    }
+
+    @Test
+    void deleteNotification_returnsSuccess() throws Exception {
+        mockMvc.perform(delete("/api/v1/notifications/{notificationId}", 7L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(notificationService).deleteNotification(1L, 7L);
+    }
+
+    @Test
+    void deleteNotification_whenMissing_returnsNotFound() throws Exception {
+        doThrow(new BusinessException(ErrorCode.NOT_FOUND, "알림을 찾을 수 없습니다."))
+                .when(notificationService).deleteNotification(1L, 99L);
+
+        mockMvc.perform(delete("/api/v1/notifications/{notificationId}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("알림을 찾을 수 없습니다."));
+    }
+
+    @Test
+    void deleteNotification_whenNotOwned_returnsForbidden() throws Exception {
+        doThrow(new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED))
+                .when(notificationService).deleteNotification(1L, 7L);
+
+        mockMvc.perform(delete("/api/v1/notifications/{notificationId}", 7L))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("NOTIFICATION_ACCESS_DENIED"));
     }
 }
