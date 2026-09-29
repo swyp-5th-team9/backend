@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,8 @@ public class NotificationService {
 
     private static final String NOTIFICATION_NOT_FOUND_MESSAGE =
             "존재하지 않거나 처리할 수 없는 알림입니다.";
+    private static final String DELETE_NOTIFICATION_NOT_FOUND_MESSAGE =
+            "알림을 찾을 수 없습니다.";
 
     private final NotificationRepository notificationRepository;
 
@@ -38,5 +41,20 @@ public class NotificationService {
                 ));
 
         notification.markAsRead();
+    }
+
+    @Transactional
+    public void deleteNotification(Long userId, Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.NOT_FOUND,
+                        DELETE_NOTIFICATION_NOT_FOUND_MESSAGE
+                ));
+
+        if (!Objects.equals(notification.getUser().getUserId(), userId)) {
+            throw new BusinessException(ErrorCode.NOTIFICATION_ACCESS_DENIED);
+        }
+
+        notificationRepository.delete(notification);
     }
 }
