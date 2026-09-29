@@ -1,5 +1,7 @@
 package com.swift.sportspub.notification.service;
 
+import com.swift.sportspub.common.exception.BusinessException;
+import com.swift.sportspub.common.exception.ErrorCode;
 import com.swift.sportspub.match.entity.Match;
 import com.swift.sportspub.notification.dto.NotificationResponse;
 import com.swift.sportspub.notification.entity.DeepLinkType;
@@ -20,8 +22,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -70,6 +74,89 @@ class NotificationServiceTest {
         assertThat(response.isRead()).isFalse();
         assertThat(response.deepLinkType()).isEqualTo(DeepLinkType.TODAY_PUBS);
         assertThat(response.createdAt()).hasToString("2026-08-24T11:30+09:00");
+    }
+
+    @Test
+    void readNotification_marksOwnedNotificationAsRead() {
+        Notification notification = notification(
+                1L, 120L, 1L, 2L, LocalDateTime.of(2026, 8, 24, 11, 30)
+        );
+        given(notificationRepository.findByNotificationIdAndUserUserId(1L, 10L))
+                .willReturn(Optional.of(notification));
+
+        notificationService.readNotification(10L, 1L);
+
+        assertThat(notification.isRead()).isTrue();
+    }
+
+    @Test
+    void readNotification_whenAlreadyRead_succeedsAndKeepsReadState() {
+        Notification notification = notification(
+                1L, 120L, 1L, 2L, LocalDateTime.of(2026, 8, 24, 11, 30)
+        );
+        notification.markAsRead();
+        given(notificationRepository.findByNotificationIdAndUserUserId(1L, 10L))
+                .willReturn(Optional.of(notification));
+
+        notificationService.readNotification(10L, 1L);
+
+        assertThat(notification.isRead()).isTrue();
+    }
+
+    @Test
+    void readNotification_whenMissingOrNotOwned_throwsNotFound() {
+        given(notificationRepository.findByNotificationIdAndUserUserId(99L, 10L))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.readNotification(10L, 99L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> {
+                    BusinessException businessException = (BusinessException) exception;
+                    assertThat(businessException.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+                    assertThat(businessException.getMessage())
+                            .isEqualTo("존재하지 않거나 처리할 수 없는 알림입니다.");
+                });
+    }
+
+    @Test
+    void deleteNotification_whenOwned_deletesNotification() {
+        Notification notification = notification(
+                1L, 120L, 1L, 2L, LocalDateTime.of(2026, 8, 24, 11, 30)
+        );
+        ReflectionTestUtils.setField(notification.getUser(), "userId", 10L);
+        given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
+
+        notificationService.deleteNotification(10L, 1L);
+
+        verify(notificationRepository).delete(notification);
+    }
+
+    @Test
+    void deleteNotification_whenMissing_throwsNotFound() {
+        given(notificationRepository.findById(99L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.deleteNotification(10L, 99L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> {
+                    BusinessException businessException = (BusinessException) exception;
+                    assertThat(businessException.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+                    assertThat(businessException.getMessage()).isEqualTo("알림을 찾을 수 없습니다.");
+                });
+    }
+
+    @Test
+    void deleteNotification_whenNotOwned_throwsAccessDenied() {
+        Notification notification = notification(
+                1L, 120L, 1L, 2L, LocalDateTime.of(2026, 8, 24, 11, 30)
+        );
+        ReflectionTestUtils.setField(notification.getUser(), "userId", 20L);
+        given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
+
+        assertThatThrownBy(() -> notificationService.deleteNotification(10L, 1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> assertThat(
+                        ((BusinessException) exception).getErrorCode()
+                ).isEqualTo(ErrorCode.NOTIFICATION_ACCESS_DENIED));
     }
 
     private Notification notification(
