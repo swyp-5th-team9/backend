@@ -97,8 +97,10 @@ docker compose up -d db
 ## Git 컨벤션
 
 ### 기본 브랜치
-- `develop` — 통합 개발 브랜치 (default)
-- `main` — 운영 배포 브랜치
+- `develop` — 통합 개발 브랜치 (default). 기능 PR은 여기로 머지한다.
+- `main` — 운영 브랜치. `main`에 push되면 GitHub Actions가 EC2에 배포한다.
+
+릴리스 흐름: `feature → develop` → `develop → main` PR.
 
 ### 브랜치 네이밍
 ```
@@ -125,6 +127,8 @@ TYPE: `FEAT` / `FIX` / `DOCS` / `REFACTOR` / `STYLE` / `TEST` / `CHORE`
 
 ### PR 규칙
 - 하나의 PR = 하나의 목적
+- 기능 PR 타깃은 `develop`
+- 운영 반영은 `develop` → `main` PR
 - Merge 전 1명 이상 리뷰
 - Merge 후 브랜치 삭제
 
