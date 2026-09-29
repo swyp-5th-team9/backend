@@ -1,10 +1,23 @@
 # sportspub-backend
 
-> KBO 중계 펍 탐색 서비스 **모여볼** 백엔드 레포
+KBO 중계 펍 탐색 서비스 **모여볼** 백엔드.
 
-> swyp 5기 9팀
+[Play Store](https://play.google.com/store/apps/details?id=com.moball.app&pcampaignid=web_share) · swyp 5기 9팀 · [DeepWiki](https://deepwiki.com/swyp-5th-team9/backend)
 
-> 딥위키 문서자료 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/swyp-5th-team9/backend)
+---
+
+## 현재 상황
+
+앱은 Google Play에 출시되어 있다. 패키지명은 `com.moball.app`이다.
+
+백엔드는 카카오/네이버 로그인, 회원, 구단, 펍 목록·지도·상세, 경기 일정, 즐겨찾기, 제보, 알림 목록 API를 제공한다. KBO 경기 데이터는 크롤러가 수집한다.
+
+아직 없는 것:
+
+- 알림 읽음 처리 / 삭제 / 발송 스케줄러
+- 공유용 App Links (`assetlinks.json`)
+
+스키마는 Flyway로 관리한다. 자세한 규칙은 [`app/src/main/resources/db/README.md`](app/src/main/resources/db/README.md)를 본다.
 
 ---
 
@@ -15,7 +28,7 @@
 - **PostgreSQL 16**
 - **Gradle 8.x** (멀티 모듈)
 - Spring Data JPA · Spring Security · OAuth2 Client · JWT (jjwt 0.12)
-- Playwright (크롤러)
+- Flyway · Playwright (크롤러)
 
 ---
 
@@ -28,20 +41,19 @@ backend/
 │       ├── KboAppApplication.java
 │       ├── common/            # ApiResponse, BaseEntity, GlobalExceptionHandler
 │       ├── config/            # SecurityConfig
-│       ├── auth/              # 소셜 로그인 (주양)
-│       ├── user/              # 회원·온보딩 (주양)
-│       ├── pub/               # 펍 CRUD
-│       ├── lineup/            # 상영 라인업
+│       ├── auth/              # 소셜 로그인
+│       ├── user/              # 회원·온보딩
+│       ├── team/              # 응원 구단
+│       ├── pub/               # 펍 목록·지도·상세
 │       ├── match/             # 경기 일정 (크롤러 DB 공유)
 │       ├── favorite/          # 즐겨찾기
-│       └── report/            # 제보
+│       ├── report/            # 제보
+│       └── notification/      # 알림 목록
 │
-├── crawler/                   # KBO 크롤러 (스케줄러)
-│   └── src/main/java/com/swift/sportspub/crawler/
-│
+├── crawler/                   # KBO 크롤러
+├── deploy/                    # 배포 스크립트·Nginx
 ├── docker-compose.yml         # 로컬 Postgres
-├── settings.gradle, build.gradle
-└── docs/                      # PRD, 스켈레톤, ERD 등 (별도 추가 예정)
+└── settings.gradle, build.gradle
 ```
 
 ---
@@ -49,8 +61,8 @@ backend/
 ## 빠른 시작
 
 ### 1. 사전 준비
-- JDK 21 설치 (`brew install --cask temurin@21`)
-- Docker Desktop 설치 (Postgres용)
+- JDK 21
+- Docker Desktop (Postgres용)
 
 ### 2. 시크릿 설정
 ```bash
@@ -61,7 +73,7 @@ cp app/src/main/resources/application-local.yml.example \
 - `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`
 - `JWT_SECRET` (256bit 랜덤 문자열)
 
-→ 환경변수로 주입하거나 `application-local.yml`에 직접 채워도 됨 (이 파일은 `.gitignore`).
+환경변수로 주입하거나 `application-local.yml`에 직접 채워도 된다. 이 파일은 `.gitignore`다.
 
 ### 3. DB 실행
 ```bash
@@ -152,16 +164,16 @@ TYPE: `FEAT` / `FIX` / `DOCS` / `REFACTOR` / `STYLE` / `TEST` / `CHORE`
 ## API 컨벤션
 
 ### URL
-- Resource는 **복수형**: `GET /pubs`, `POST /reviews`, `DELETE /favorites/{id}`
+- Resource는 **복수형**: `GET /api/v1/pubs`, `DELETE /api/v1/favorites/{id}`
 - 인증 필요 경로: `/api/v1/...`
 
 ### 응답 포맷
 ```json
-// 성공
-{ "success": true, "data": { ... } }
+{ "success": true, "data": { } }
+```
 
-// 실패
-{ "success": false, "message": "에러 메시지" }
+```json
+{ "success": false, "errorCode": "NOT_FOUND", "message": "에러 메시지" }
 ```
 
 배포된 필드 **삭제·이름변경 금지**. 추가만 자유.
@@ -176,6 +188,7 @@ TYPE: `FEAT` / `FIX` / `DOCS` / `REFACTOR` / `STYLE` / `TEST` / `CHORE`
 
 | 도메인 | 담당 | 비고 |
 |---|---|---|
-| auth, user | 주양 | 소셜 로그인 + 회원 |
-| pub, lineup, match, favorite, report | 미정 | 기능명세서 확정 후 분배 |
-| crawler | 진용 | 기존 KBO 크롤러 모듈 통합 |
+| auth, user | 주양 | 소셜 로그인, 회원, 탈퇴 |
+| favorite, report, notification | 주양 | 즐겨찾기, 제보, 알림 |
+| pub, match, team | 진용 | 펍·경기·구단 조회 |
+| crawler, deploy | 진용 | KBO 크롤러, 인프라 |
