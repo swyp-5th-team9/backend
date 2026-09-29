@@ -2,11 +2,11 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 concurrency:
-  group: deploy-develop
+  group: deploy-main
   cancel-in-progress: false
 
 jobs:
