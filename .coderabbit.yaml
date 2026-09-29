@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ko-KR
+early_access: false
+
+reviews:
+    profile: chill
+    high_level_summary: true
+    collapse_walkthrough: true
+    poem: false
+
+    path_filters:
+        - "**/*.java"
+        - "**/*.gradle"
+        - "**/*.gradle.kts"
+        - "**/*.yml"
+        - "**/*.yaml"
+        - "**/*.properties"
+        - "**/*.sql"
+        - "**/Dockerfile"
+        - "**/docker-compose*.yml"
+        - "!**/build/**"
+        - "!**/.gradle/**"
+        - "!**/out/**"
+        - "!**/generated/**"
+        - "!**/target/**"
+        - "!**/*.md"
+        - "!**/application-local.yml"
+        - "!**/application-prod.yml"
+
+    auto_review:
+        enabled: true
+        auto_incremental_review: true
+        drafts: false
+        base_branches:
+            - main
+            - develop
+        ignore_usernames:
+            - dependabot
+            - "dependabot[bot]"
+            - renovate
+            - "renovate[bot]"
+
+    path_instructions:
+        - path: "**/*.java"
+          instructions: |
+              Java 21 best practices: var 적절히 사용, Optional 남용 금지(필드/파라미터 X),
+              equals/hashCode 일관성, 불변 객체 우선, NPE 방어, 하드코딩 시크릿 금지,
+              SecureRandom 사용, try-with-resources, 매직 넘버 상수화.
+
+        - path: "**/*Controller.java"
+          instructions: |
+              Spring Controller: @RestController 사용, URL은 복수형 리소스 네이밍,
+              요청 검증은 @Valid + @RequestBody, 응답은 ApiResponse 포맷 통일,
+              예외는 throw → GlobalExceptionHandler 위임, 컨트롤러에 비즈니스 로직 금지,
+              Swagger 어노테이션(@Operation/@Parameter)으로 문서화.
+
+        - path: "**/*Service.java"
+          instructions: |
+              Spring Service: @Service + 생성자 주입(@RequiredArgsConstructor + private final),
+              @Transactional 적절히(읽기는 readOnly=true), 도메인 메서드로 엔티티 수정,
+              setter 호출 금지, 단일 책임 원칙, 예외는 BusinessException + ErrorCode 사용.
+
+        - path: "**/*Repository.java"
+          instructions: |
+              Spring Data JPA: 메서드 네이밍 규칙 준수(findBy/existsBy/deleteBy),
+              N+1 주의(@EntityGraph 또는 fetch join), 페이징은 Pageable,
+              네이티브 쿼리 최소화, Soft Delete 컬럼(deleted_at) 고려.
+
+        - path: "**/entity/*.java"
+          instructions: |
+              JPA Entity: BaseEntity 상속(createdAt/updatedAt 자동),
+              @NoArgsConstructor(access = PROTECTED) + @Builder 권장, @Setter 금지,
+              연관관계는 LAZY 기본, mappedBy 명시, UNIQUE 제약 명시,
+              비즈니스 메서드(update~/change~)로 상태 변경, equals/hashCode는 id 기반.
+
+        - path: "**/dto/*.java"
+          instructions: |
+              DTO: record 우선 검토(Java 21), Request는 @Valid 가능하게 검증 어노테이션,
+              Response는 불변(record/Getter only), 엔티티 직접 노출 금지,
+              네이밍은 XxxRequest/XxxResponse 통일.
+
+        - path: "**/config/*.java"
+          instructions: |
+              Spring Config: @Configuration + @Bean 선언, 프로파일별 분기는 @Profile,
+              SecurityConfig는 STATELESS + 명시적 경로 권한, CORS 화이트리스트 명시,
+              시크릿은 @Value + 환경변수, application.yml에 평문 금지.
+
+        - path: "**/exception/*.java"
+          instructions: |
+              예외 처리: 커스텀 예외는 BusinessException 상속 + ErrorCode 사용,
+              @RestControllerAdvice로 일괄 처리, 응답은 ApiResponse.fail 포맷,
+              스택트레이스 응답 노출 금지, 로그 레벨 적절히(warn/error 구분).
+
+        - path: "**/jwt/**/*.java"
+          instructions: |
+              JWT: HS256 이상 알고리즘, secret은 환경변수, 만료 시간 검증 필수,
+              refresh 토큰은 DB 해시 저장(평문 X), 토큰 회전(rotation) 권장,
+              예외는 401로 일관 처리.
+
+        - path: "**/oauth2/**/*.java"
+          instructions: |
+              OAuth2: provider별 UserInfo 추상화, 신규/기존 회원 분기 명확히,
+              SuccessHandler에서 JWT 발급 후 앱 딥링크 redirect,
+              State 검증으로 CSRF 방지, 토큰은 응답 본문 또는 안전 채널로 전달.
+
+        - path: "**/*.gradle"
+          instructions: |
+              Gradle: 의존성 버전은 BOM/Spring Boot 관리에 위임, 직접 명시 최소화,
+              jcenter() 금지, deprecated API 마이그레이션, test/runtime 의존성 분리,
+              implementation/api 구분 명확히.
+
+        - path: "**/application*.yml"
+          instructions: |
+              application.yml: 프로파일별 파일 분리(local/prod), 시크릿은 ${ENV:default},
+              운영 yml에 평문 비밀번호 금지, 로그 레벨/DDL 모드 환경별 차등,
+              주석으로 의도 설명.
+
+        - path: "**/*.sql"
+          instructions: |
+              SQL/마이그레이션: 운영 데이터 손실 위험 변경은 down 마이그레이션 준비,
+              인덱스 전략 명시, NOT NULL/DEFAULT/제약 명시, 트랜잭션 경계 확인.
+
+        - path: "**/test/**/*.java"
+          instructions: |
+              Spring 테스트: @SpringBootTest 남용 금지(슬라이스 테스트 우선:
+              @WebMvcTest/@DataJpaTest), AssertJ 사용, given-when-then 패턴,
+              테스트 이름은 시나리오와 기대결과 드러나게, 통합 테스트는 Testcontainers 권장.
+
+    tools:
+        gitleaks:
+            enabled: true
+
+chat:
+    auto_reply: true

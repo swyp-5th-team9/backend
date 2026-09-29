@@ -22,3 +22,36 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Spring Boot local config (secrets)
+# application-prod.yml 은 env 변수 주입형(시크릿 없음)이라 tracked.
+# 시크릿은 절대 박지 말고 ${ENV_NAME} 형태만 사용할 것.
+application-local.yml
+application-local.properties
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Local debug — SDK access token 임시 메모
+tokens*

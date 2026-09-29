@@ -1,0 +1,25 @@
+spring:
+  profiles:
+    active: local
+  application:
+    name: sportspub-app
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 35MB
+
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  user:
+    withdrawal:
+      retention-days: 30
+      hard-delete-cron: "0 0 3 * * *"
