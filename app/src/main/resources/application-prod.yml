@@ -81,6 +81,8 @@ app:
     withdrawal:
       retention-days: 30
       hard-delete-cron: "0 0 3 * * *"
+  notification:
+    reminder-cron: "0 0 9 * * *"
 
 logging:
   level:
