@@ -1,5 +1,6 @@
 package com.swift.sportspub.notification.repository;
 
+import com.swift.sportspub.notification.entity.DeepLinkType;
 import com.swift.sportspub.notification.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,4 +22,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByUserUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
     Optional<Notification> findByNotificationIdAndUserUserId(Long notificationId, Long userId);
+
+    boolean existsByUserUserIdAndMatchMatchIdAndDeepLinkType(
+            Long userId,
+            Long matchId,
+            DeepLinkType deepLinkType
+    );
 }
