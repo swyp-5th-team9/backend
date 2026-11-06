@@ -1,6 +1,7 @@
 package com.swift.sportspub.match.repository;
 
 import com.swift.sportspub.match.entity.Match;
+import com.swift.sportspub.match.entity.MatchStatus;
 import com.swift.sportspub.team.entity.SportType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,5 +28,18 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,
             @Param("teamId") Long teamId
+    );
+
+    @Query("""
+            SELECT m FROM Match m
+            JOIN FETCH m.homeTeam
+            JOIN FETCH m.awayTeam
+            WHERE m.matchDate = :matchDate
+              AND m.status <> :canceled
+            ORDER BY m.startTime ASC, m.matchId ASC
+            """)
+    List<Match> findNotCanceledByMatchDate(
+            @Param("matchDate") LocalDate matchDate,
+            @Param("canceled") MatchStatus canceled
     );
 }
