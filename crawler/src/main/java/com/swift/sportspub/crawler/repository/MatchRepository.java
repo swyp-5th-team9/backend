@@ -4,6 +4,7 @@ import com.swift.sportspub.crawler.entity.Match;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
@@ -13,5 +14,11 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
             LocalDate matchDate,
             Long homeTeamId,
             Long awayTeamId
+    );
+
+    List<Match> findBySportTypeAndMatchDateBetween(
+            String sportType,
+            LocalDate fromInclusive,
+            LocalDate toInclusive
     );
 }

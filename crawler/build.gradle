@@ -22,6 +22,7 @@ tasks.register('smokeFetch', JavaExec) {
     mainClass = 'com.swift.sportspub.crawler.SmokeFetch'
     def ym = project.findProperty('ym') ?: ''
     args = ym.toString().split(' ').findAll { it }
+    systemProperty 'file.encoding', 'UTF-8'
 }
 
 tasks.register('playwrightInstall', JavaExec) {

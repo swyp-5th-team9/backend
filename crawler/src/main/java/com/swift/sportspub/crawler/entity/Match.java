@@ -96,6 +96,20 @@ public class Match {
         this.status = status;
     }
 
+    public void applySnapshot(
+            LocalTime startTime,
+            String stadium,
+            Integer homeScore,
+            Integer awayScore,
+            MatchStatus status
+    ) {
+        this.startTime = startTime;
+        this.stadium = stadium;
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
+        this.status = status;
+    }
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
