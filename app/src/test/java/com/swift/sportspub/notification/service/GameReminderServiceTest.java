@@ -6,6 +6,7 @@ import com.swift.sportspub.match.repository.MatchRepository;
 import com.swift.sportspub.notification.entity.DeepLinkType;
 import com.swift.sportspub.notification.entity.Notification;
 import com.swift.sportspub.notification.entity.NotificationType;
+import com.swift.sportspub.notification.push.FcmPushService;
 import com.swift.sportspub.notification.repository.NotificationRepository;
 import com.swift.sportspub.team.entity.SportType;
 import com.swift.sportspub.team.entity.Team;
@@ -43,6 +44,9 @@ class GameReminderServiceTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+
+    @Mock
+    private FcmPushService fcmPushService;
 
     @InjectMocks
     private GameReminderService gameReminderService;
@@ -85,6 +89,21 @@ class GameReminderServiceTest {
         assertThat(tomorrowNotification.getTitle()).isEqualTo("내일 경기 있어요!");
         assertThat(tomorrowNotification.getContent())
                 .isEqualTo("LG 트윈스와 KT 위즈 경기가 내일 진행돼요.");
+
+        verify(fcmPushService).sendGameReminder(
+                10L,
+                "오늘 경기 있어요!",
+                "LG 트윈스와 두산 베어스 경기가 오늘 오후 6시에 진행돼요.",
+                DeepLinkType.TODAY_PUBS,
+                List.of(1L, 2L)
+        );
+        verify(fcmPushService).sendGameReminder(
+                10L,
+                "내일 경기 있어요!",
+                "LG 트윈스와 KT 위즈 경기가 내일 진행돼요.",
+                DeepLinkType.TOMORROW_GAME,
+                List.of(1L, 3L)
+        );
     }
 
     @Test
@@ -107,6 +126,7 @@ class GameReminderServiceTest {
 
         assertThat(created).isZero();
         verify(notificationRepository, never()).save(any());
+        verify(fcmPushService, never()).sendGameReminder(any(), any(), any(), any(), any());
     }
 
     private Match match(

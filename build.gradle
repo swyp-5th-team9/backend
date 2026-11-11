@@ -22,6 +22,10 @@ subprojects {
         }
     }
 
+    // GitHub Actions ubuntu-latest(Docker Engine 29) 호환.
+    // Boot 3.5.0 BOM 기본 1.21.0 은 API 1.32 고정으로 runner Docker 와 충돌한다.
+    ext['testcontainers.version'] = '1.21.4'
+
     dependencyManagement {
         imports {
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
