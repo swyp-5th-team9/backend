@@ -157,31 +157,10 @@ public class KboPlaywrightProvider implements GameDataProvider {
                     stadium = tds.get(tds.size() - 2).innerText().trim();
                 }
 
-                Integer awayScore = null;
-                Integer homeScore = null;
-                GameData.Status status = GameData.Status.SCHEDULED;
-
-                ElementHandle scoreEm = playCell.querySelector("em");
-                if (scoreEm != null) {
-                    List<ElementHandle> scoreSpans = scoreEm.querySelectorAll("span");
-                    if (scoreSpans.size() >= 3) {
-                        try {
-                            awayScore = Integer.parseInt(scoreSpans.get(0).innerText().trim());
-                            homeScore = Integer.parseInt(scoreSpans.get(2).innerText().trim());
-                            status = GameData.Status.FINISHED;
-                        } catch (NumberFormatException ignored) {
-                            String emText = scoreEm.innerText();
-                            if (emText.contains("취소") || emText.contains("우천")) {
-                                status = GameData.Status.CANCELED;
-                            }
-                        }
-                    } else {
-                        String emText = scoreEm.innerText();
-                        if (emText.contains("취소") || emText.contains("우천")) {
-                            status = GameData.Status.CANCELED;
-                        }
-                    }
-                }
+                ScoreParseResult scoreResult = parseScore(playCell);
+                GameData.Status status = scoreResult.status();
+                Integer awayScore = scoreResult.awayScore();
+                Integer homeScore = scoreResult.homeScore();
 
                 // 미래 날짜에 점수가 붙어 종료로 오는 이상 데이터 방어
                 if (status == GameData.Status.FINISHED && currentDate.isAfter(today)) {
@@ -210,7 +189,91 @@ public class KboPlaywrightProvider implements GameDataProvider {
         return games;
     }
 
+    /**
+     * 두 자리 점수(10+)가 자릿수 span 으로 쪼개져도 깨지지 않게 파싱한다.
+     * 우선순위: win/lose/same 클래스 → em 직계 숫자 span → em 전체 텍스트 정규식.
+     */
+    private ScoreParseResult parseScore(ElementHandle playCell) {
+        ElementHandle scoreEm = playCell.querySelector("em");
+        if (scoreEm == null) {
+            return ScoreParseResult.scheduled();
+        }
+
+        String emText = scoreEm.innerText().replace('\n', ' ').trim();
+        if (emText.contains("취소") || emText.contains("우천")) {
+            return ScoreParseResult.canceled();
+        }
+
+        List<ElementHandle> classed = scoreEm.querySelectorAll(
+                ":scope > span.win, :scope > span.lose, :scope > span.same"
+        );
+        if (classed.size() >= 2) {
+            Integer away = parseIntOrNull(classed.get(0).innerText());
+            Integer home = parseIntOrNull(classed.get(1).innerText());
+            if (away != null && home != null) {
+                return ScoreParseResult.finished(away, home);
+            }
+        }
+
+        List<Integer> numericDirect = new ArrayList<>();
+        for (ElementHandle span : scoreEm.querySelectorAll(":scope > span")) {
+            Integer value = parseIntOrNull(span.innerText());
+            if (value != null) {
+                numericDirect.add(value);
+            }
+        }
+        if (numericDirect.size() >= 2) {
+            return ScoreParseResult.finished(numericDirect.get(0), numericDirect.get(1));
+        }
+
+        // 예: "5vs10", "5:10"
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(\\d+)\\s*(?:vs|:|：)\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(emText.replace(" ", ""));
+        if (matcher.find()) {
+            return ScoreParseResult.finished(
+                    Integer.parseInt(matcher.group(1)),
+                    Integer.parseInt(matcher.group(2))
+            );
+        }
+
+        return ScoreParseResult.scheduled();
+    }
+
+    private Integer parseIntOrNull(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(trimmed);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String dedupeKey(GameData game) {
         return game.getGameDate() + "|" + game.getAwayTeam() + "|" + game.getHomeTeam();
+    }
+
+    private record ScoreParseResult(
+            GameData.Status status,
+            Integer awayScore,
+            Integer homeScore
+    ) {
+        static ScoreParseResult scheduled() {
+            return new ScoreParseResult(GameData.Status.SCHEDULED, null, null);
+        }
+
+        static ScoreParseResult canceled() {
+            return new ScoreParseResult(GameData.Status.CANCELED, null, null);
+        }
+
+        static ScoreParseResult finished(int away, int home) {
+            return new ScoreParseResult(GameData.Status.FINISHED, away, home);
+        }
     }
 }
