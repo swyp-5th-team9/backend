@@ -152,12 +152,14 @@ public class KboPlaywrightProvider implements GameDataProvider {
                 }
 
                 String stadium = "";
+                String remark = "";
                 List<ElementHandle> tds = row.querySelectorAll("td");
                 if (tds.size() >= 2) {
                     stadium = tds.get(tds.size() - 2).innerText().trim();
+                    remark = tds.get(tds.size() - 1).innerText().replace('\n', ' ').trim();
                 }
 
-                ScoreParseResult scoreResult = parseScore(playCell);
+                ScoreParseResult scoreResult = parseScore(playCell, remark);
                 GameData.Status status = scoreResult.status();
                 Integer awayScore = scoreResult.awayScore();
                 Integer homeScore = scoreResult.homeScore();
@@ -190,18 +192,20 @@ public class KboPlaywrightProvider implements GameDataProvider {
     }
 
     /**
-     * 두 자리 점수(10+)가 자릿수 span 으로 쪼개져도 깨지지 않게 파싱한다.
-     * 우선순위: win/lose/same 클래스 → em 직계 숫자 span → em 전체 텍스트 정규식.
+     * 점수/취소 파싱.
+     * - 우천·취소는 보통 {@code em}이 아니라 비고(마지막 td)에만 표기된다.
+     * - 두 자리 점수(10+)는 win/lose/same span 전체 텍스트를 사용한다.
      */
-    private ScoreParseResult parseScore(ElementHandle playCell) {
+    private ScoreParseResult parseScore(ElementHandle playCell, String remark) {
         ElementHandle scoreEm = playCell.querySelector("em");
+        String emText = scoreEm == null ? "" : scoreEm.innerText().replace('\n', ' ').trim();
+
+        // KBO는 우천취소/그라운드사정 등을 em이 아니라 비고(마지막 td)에 넣는다. 정상 종료 비고는 "-".
+        if (isCanceledText(emText) || isCanceledRemark(remark)) {
+            return ScoreParseResult.canceled();
+        }
         if (scoreEm == null) {
             return ScoreParseResult.scheduled();
-        }
-
-        String emText = scoreEm.innerText().replace('\n', ' ').trim();
-        if (emText.contains("취소") || emText.contains("우천")) {
-            return ScoreParseResult.canceled();
         }
 
         List<ElementHandle> classed = scoreEm.querySelectorAll(
@@ -238,6 +242,25 @@ public class KboPlaywrightProvider implements GameDataProvider {
         }
 
         return ScoreParseResult.scheduled();
+    }
+
+    private boolean isCanceledText(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        return text.contains("취소") || text.contains("우천");
+    }
+
+    private boolean isCanceledRemark(String remark) {
+        if (remark == null) {
+            return false;
+        }
+        String trimmed = remark.trim();
+        if (trimmed.isEmpty() || "-".equals(trimmed)) {
+            return false;
+        }
+        // 비고에 사유 문구가 있으면 취소 (우천취소, 그라운드사정 등)
+        return true;
     }
 
     private Integer parseIntOrNull(String raw) {
