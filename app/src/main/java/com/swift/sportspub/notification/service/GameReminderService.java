@@ -6,10 +6,12 @@ import com.swift.sportspub.match.repository.MatchRepository;
 import com.swift.sportspub.notification.entity.DeepLinkType;
 import com.swift.sportspub.notification.entity.Notification;
 import com.swift.sportspub.notification.entity.NotificationType;
+import com.swift.sportspub.notification.push.FcmPushService;
 import com.swift.sportspub.notification.repository.NotificationRepository;
 import com.swift.sportspub.user.entity.User;
 import com.swift.sportspub.user.repository.UserFavoriteTeamRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameReminderService {
@@ -24,6 +27,7 @@ public class GameReminderService {
     private final MatchRepository matchRepository;
     private final UserFavoriteTeamRepository userFavoriteTeamRepository;
     private final NotificationRepository notificationRepository;
+    private final FcmPushService fcmPushService;
 
     @Transactional
     public int createDailyReminders(LocalDate today) {
@@ -51,15 +55,34 @@ public class GameReminderService {
                     continue;
                 }
 
+                String title = dayWord + " 경기 있어요!";
+                String body = content(match, dayWord);
                 notificationRepository.save(Notification.builder()
                         .user(user)
                         .match(match)
                         .type(NotificationType.GAME_REMINDER)
-                        .title(dayWord + " 경기 있어요!")
-                        .content(content(match, dayWord))
+                        .title(title)
+                        .content(body)
                         .deepLinkType(deepLinkType)
                         .build());
                 created++;
+
+                try {
+                    fcmPushService.sendGameReminder(
+                            user.getUserId(),
+                            title,
+                            body,
+                            deepLinkType,
+                            List.of(match.getHomeTeam().getTeamId(), match.getAwayTeam().getTeamId())
+                    );
+                } catch (Exception e) {
+                    log.warn(
+                            "FCM 푸시 호출 실패 userId={} matchId={}",
+                            user.getUserId(),
+                            match.getMatchId(),
+                            e
+                    );
+                }
             }
         }
 

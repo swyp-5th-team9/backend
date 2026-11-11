@@ -83,6 +83,10 @@ app:
       hard-delete-cron: "0 0 3 * * *"
   notification:
     reminder-cron: "0 0 9 * * *"
+  fcm:
+    enabled: ${FCM_ENABLED:false}
+    credentials-json: ${FCM_CREDENTIALS_JSON:}
+    credentials-base64: ${FCM_CREDENTIALS_BASE64:}
 
 logging:
   level:
