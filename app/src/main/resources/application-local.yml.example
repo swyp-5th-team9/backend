@@ -82,6 +82,13 @@ app:
     withdrawal:
       retention-days: 30
       hard-delete-cron: "0 0 3 * * *"
+  notification:
+    reminder-cron: "0 0 9 * * *"
+  # FCM — 로컬에서 푸시 검증 시 FCM_ENABLED=true + 서비스 계정 JSON
+  fcm:
+    enabled: ${FCM_ENABLED:false}
+    credentials-json: ${FCM_CREDENTIALS_JSON:}
+    credentials-base64: ${FCM_CREDENTIALS_BASE64:}
 
 logging:
   level:
