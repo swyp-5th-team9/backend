@@ -4,10 +4,12 @@ import com.swift.sportspub.common.response.ApiResponse;
 import com.swift.sportspub.common.swagger.ApiFailResponse;
 import com.swift.sportspub.common.swagger.DocResponse;
 import com.swift.sportspub.common.swagger.DocResponses;
+import com.swift.sportspub.user.dto.FcmTokenRequest;
 import com.swift.sportspub.user.dto.OnboardingRequest;
 import com.swift.sportspub.user.dto.UpdateUserRequest;
 import com.swift.sportspub.user.dto.UserResponse;
 import com.swift.sportspub.user.dto.WithdrawRequest;
+import com.swift.sportspub.user.service.FcmTokenService;
 import com.swift.sportspub.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final FcmTokenService fcmTokenService;
 
     @Operation(
             summary = "회원 온보딩",
@@ -292,6 +295,61 @@ public class UserController {
             @Valid @RequestBody WithdrawRequest request
     ) {
         userService.withdraw(userId, request);
+        return ApiResponse.success();
+    }
+
+    @Operation(
+            summary = "FCM 디바이스 토큰 등록/갱신",
+            description = """
+                    현재 로그인한 사용자의 FCM 디바이스 토큰을 등록하거나 갱신한다.
+                    동일 토큰이 다른 계정에 묶여 있으면 현재 계정으로 재할당한다.
+                    유저당 여러 기기(토큰)를 허용한다.
+                    """
+    )
+    @DocResponses({
+            @DocResponse(responseCode = "200", description = "등록 성공"),
+            @DocResponse(
+                    responseCode = "400",
+                    description = "INVALID_INPUT — token 검증 실패",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"INVALID_INPUT\",\"message\":\"token: token은 필수입니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "401",
+                    description = "UNAUTHORIZED — 인증 필요",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "404",
+                    description = "NOT_FOUND — 사용자 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiFailResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"success\":false,\"errorCode\":\"NOT_FOUND\",\"message\":\"사용자를 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @DocResponse(
+                    responseCode = "500",
+                    description = "INTERNAL_ERROR",
+                    content = @Content(schema = @Schema(implementation = ApiFailResponse.class))
+            )
+    })
+    @PostMapping("/me/fcm-token")
+    public ApiResponse<Void> registerFcmToken(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody FcmTokenRequest request
+    ) {
+        fcmTokenService.register(userId, request);
         return ApiResponse.success();
     }
 }

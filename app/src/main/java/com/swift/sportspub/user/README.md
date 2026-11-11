@@ -48,3 +48,4 @@
 - POST `/api/v1/users/me/onboarding` (닉네임 + 응원 구단)
 - PATCH `/api/v1/users/me`
 - DELETE `/api/v1/users/me` (Soft Delete, `WithdrawRequest` body)
+- POST `/api/v1/users/me/fcm-token` (FCM 디바이스 토큰 등록/갱신)
