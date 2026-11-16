@@ -152,36 +152,17 @@ public class KboPlaywrightProvider implements GameDataProvider {
                 }
 
                 String stadium = "";
+                String remark = "";
                 List<ElementHandle> tds = row.querySelectorAll("td");
                 if (tds.size() >= 2) {
                     stadium = tds.get(tds.size() - 2).innerText().trim();
+                    remark = tds.get(tds.size() - 1).innerText().replace('\n', ' ').trim();
                 }
 
-                Integer awayScore = null;
-                Integer homeScore = null;
-                GameData.Status status = GameData.Status.SCHEDULED;
-
-                ElementHandle scoreEm = playCell.querySelector("em");
-                if (scoreEm != null) {
-                    List<ElementHandle> scoreSpans = scoreEm.querySelectorAll("span");
-                    if (scoreSpans.size() >= 3) {
-                        try {
-                            awayScore = Integer.parseInt(scoreSpans.get(0).innerText().trim());
-                            homeScore = Integer.parseInt(scoreSpans.get(2).innerText().trim());
-                            status = GameData.Status.FINISHED;
-                        } catch (NumberFormatException ignored) {
-                            String emText = scoreEm.innerText();
-                            if (emText.contains("취소") || emText.contains("우천")) {
-                                status = GameData.Status.CANCELED;
-                            }
-                        }
-                    } else {
-                        String emText = scoreEm.innerText();
-                        if (emText.contains("취소") || emText.contains("우천")) {
-                            status = GameData.Status.CANCELED;
-                        }
-                    }
-                }
+                ScoreParseResult scoreResult = parseScore(playCell, remark);
+                GameData.Status status = scoreResult.status();
+                Integer awayScore = scoreResult.awayScore();
+                Integer homeScore = scoreResult.homeScore();
 
                 // 미래 날짜에 점수가 붙어 종료로 오는 이상 데이터 방어
                 if (status == GameData.Status.FINISHED && currentDate.isAfter(today)) {
@@ -210,7 +191,112 @@ public class KboPlaywrightProvider implements GameDataProvider {
         return games;
     }
 
+    /**
+     * 점수/취소 파싱.
+     * - 우천·취소는 보통 {@code em}이 아니라 비고(마지막 td)에만 표기된다.
+     * - 두 자리 점수(10+)는 win/lose/same span 전체 텍스트를 사용한다.
+     */
+    private ScoreParseResult parseScore(ElementHandle playCell, String remark) {
+        ElementHandle scoreEm = playCell.querySelector("em");
+        String emText = scoreEm == null ? "" : scoreEm.innerText().replace('\n', ' ').trim();
+
+        // KBO는 우천취소/그라운드사정 등을 em이 아니라 비고(마지막 td)에 넣는다. 정상 종료 비고는 "-".
+        if (isCanceledText(emText) || isCanceledRemark(remark)) {
+            return ScoreParseResult.canceled();
+        }
+        if (scoreEm == null) {
+            return ScoreParseResult.scheduled();
+        }
+
+        List<ElementHandle> classed = scoreEm.querySelectorAll(
+                ":scope > span.win, :scope > span.lose, :scope > span.same"
+        );
+        if (classed.size() >= 2) {
+            Integer away = parseIntOrNull(classed.get(0).innerText());
+            Integer home = parseIntOrNull(classed.get(1).innerText());
+            if (away != null && home != null) {
+                return ScoreParseResult.finished(away, home);
+            }
+        }
+
+        List<Integer> numericDirect = new ArrayList<>();
+        for (ElementHandle span : scoreEm.querySelectorAll(":scope > span")) {
+            Integer value = parseIntOrNull(span.innerText());
+            if (value != null) {
+                numericDirect.add(value);
+            }
+        }
+        if (numericDirect.size() >= 2) {
+            return ScoreParseResult.finished(numericDirect.get(0), numericDirect.get(1));
+        }
+
+        // 예: "5vs10", "5:10"
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(\\d+)\\s*(?:vs|:|：)\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(emText.replace(" ", ""));
+        if (matcher.find()) {
+            return ScoreParseResult.finished(
+                    Integer.parseInt(matcher.group(1)),
+                    Integer.parseInt(matcher.group(2))
+            );
+        }
+
+        return ScoreParseResult.scheduled();
+    }
+
+    private boolean isCanceledText(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        return text.contains("취소") || text.contains("우천");
+    }
+
+    private boolean isCanceledRemark(String remark) {
+        if (remark == null) {
+            return false;
+        }
+        String trimmed = remark.trim();
+        if (trimmed.isEmpty() || "-".equals(trimmed)) {
+            return false;
+        }
+        // 비고에 사유 문구가 있으면 취소 (우천취소, 그라운드사정 등)
+        return true;
+    }
+
+    private Integer parseIntOrNull(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(trimmed);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String dedupeKey(GameData game) {
         return game.getGameDate() + "|" + game.getAwayTeam() + "|" + game.getHomeTeam();
+    }
+
+    private record ScoreParseResult(
+            GameData.Status status,
+            Integer awayScore,
+            Integer homeScore
+    ) {
+        static ScoreParseResult scheduled() {
+            return new ScoreParseResult(GameData.Status.SCHEDULED, null, null);
+        }
+
+        static ScoreParseResult canceled() {
+            return new ScoreParseResult(GameData.Status.CANCELED, null, null);
+        }
+
+        static ScoreParseResult finished(int away, int home) {
+            return new ScoreParseResult(GameData.Status.FINISHED, away, home);
+        }
     }
 }
