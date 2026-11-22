@@ -60,6 +60,14 @@ public class Pub extends BaseEntity {
     private PubStatus status;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "exposure", nullable = false, length = 20)
+    private PubExposure exposure = PubExposure.PUBLIC;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "draft_status", nullable = false, length = 20)
+    private PubDraftStatus draftStatus = PubDraftStatus.COMPLETE;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "capacity_range", length = 20)
     private CapacityRange capacityRange;
 

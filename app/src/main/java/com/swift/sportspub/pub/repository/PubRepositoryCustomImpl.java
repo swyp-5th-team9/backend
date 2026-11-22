@@ -22,7 +22,7 @@ public class PubRepositoryCustomImpl implements PubRepositoryCustom {
 
     @Override
     public PubIdPage searchPubIds(PubListSearchCondition condition) {
-        StringBuilder where = new StringBuilder(" WHERE p.deleted_at IS NULL ");
+        StringBuilder where = new StringBuilder(" WHERE p.deleted_at IS NULL AND p.exposure = 'PUBLIC' ");
         Map<String, Object> params = new HashMap<>();
 
         if (condition.keyword() != null && !condition.keyword().isBlank()) {
@@ -57,7 +57,7 @@ public class PubRepositoryCustomImpl implements PubRepositoryCustom {
 
     @Override
     public List<Long> searchMapPubIds(PubMapSearchCondition condition) {
-        StringBuilder where = new StringBuilder(" WHERE p.deleted_at IS NULL ");
+        StringBuilder where = new StringBuilder(" WHERE p.deleted_at IS NULL AND p.exposure = 'PUBLIC' ");
         Map<String, Object> params = new HashMap<>();
 
         where.append(" AND p.latitude BETWEEN :swLat AND :neLat ")

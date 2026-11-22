@@ -1,6 +1,7 @@
 package com.swift.sportspub.report.service;
 
 import com.swift.sportspub.pub.entity.Pub;
+import com.swift.sportspub.pub.entity.PubExposure;
 import com.swift.sportspub.pub.repository.PubRepository;
 import com.swift.sportspub.report.dto.ReportCreateRequest;
 import com.swift.sportspub.report.dto.ReportCreateResponse;
@@ -95,8 +96,12 @@ public class ReportService {
             return null;
         }
 
-        return pubRepository.findById(pubId)
+        Pub pub = pubRepository.findById(pubId)
                 .orElseThrow(() -> new ReportException(ReportErrorCode.PUB_NOT_FOUND));
+        if (pub.getExposure() != PubExposure.PUBLIC) {
+            throw new ReportException(ReportErrorCode.PUB_NOT_FOUND);
+        }
+        return pub;
     }
 
     private List<MultipartFile> filterImages(List<MultipartFile> images) {

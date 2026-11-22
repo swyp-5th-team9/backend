@@ -8,6 +8,7 @@ import com.swift.sportspub.favorite.dto.FavoriteListResponse;
 import com.swift.sportspub.favorite.entity.Favorite;
 import com.swift.sportspub.favorite.repository.FavoriteRepository;
 import com.swift.sportspub.pub.entity.Pub;
+import com.swift.sportspub.pub.entity.PubExposure;
 import com.swift.sportspub.pub.entity.PubImage;
 import com.swift.sportspub.pub.repository.PubImageRepository;
 import com.swift.sportspub.pub.repository.PubRepository;
@@ -56,11 +57,17 @@ public class FavoriteService {
         Map<Long, String> thumbnailByPubId = buildThumbnailByPubId(pubIds);
 
         List<FavoriteItemResponse> items = favorites.stream()
-                .map(favorite -> toFavoriteItemResponse(
-                        favorite,
-                        pubById.get(favorite.getPubId()),
-                        thumbnailByPubId.get(favorite.getPubId())
-                ))
+                .map(favorite -> {
+                    Pub pub = pubById.get(favorite.getPubId());
+                    if (pub != null && pub.getExposure() != PubExposure.PUBLIC) {
+                        pub = null;
+                    }
+                    return toFavoriteItemResponse(
+                            favorite,
+                            pub,
+                            thumbnailByPubId.get(favorite.getPubId())
+                    );
+                })
                 .toList();
 
         return FavoriteListResponse.of(items);
@@ -105,6 +112,9 @@ public class FavoriteService {
 
         Pub pub = pubRepository.findById(pubId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다."));
+        if (pub.getExposure() != PubExposure.PUBLIC) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 pubId입니다.");
+        }
         validateNotDuplicate(userId, pubId);
         validateFavoriteLimit(userId);
 

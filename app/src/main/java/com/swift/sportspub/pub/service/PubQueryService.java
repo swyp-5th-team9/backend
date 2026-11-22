@@ -19,6 +19,7 @@ import com.swift.sportspub.pub.dto.PubSummary;
 import com.swift.sportspub.pub.dto.SupportedTeamDetail;
 import com.swift.sportspub.pub.dto.SupportedTeamSummary;
 import com.swift.sportspub.pub.entity.Pub;
+import com.swift.sportspub.pub.entity.PubExposure;
 import com.swift.sportspub.pub.entity.PubBusinessHours;
 import com.swift.sportspub.pub.entity.PubFacility;
 import com.swift.sportspub.pub.entity.PubFoodTag;
@@ -163,8 +164,7 @@ public class PubQueryService {
 
     @Transactional(readOnly = true)
     public PubDetailResponse findDetail(Long pubId) {
-        Pub pub = pubRepository.findById(pubId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        Pub pub = requirePublic(pubId);
 
         List<Long> ids = List.of(pubId);
 
@@ -220,8 +220,7 @@ public class PubQueryService {
 
     @Transactional(readOnly = true)
     public PubSummary findSummary(Long pubId) {
-        Pub pub = pubRepository.findById(pubId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        Pub pub = requirePublic(pubId);
 
         String thumbnailUrl = pubImageRepository
                 .findFirstByPubIdOrderByDisplayOrderAsc(pubId)
@@ -250,12 +249,21 @@ public class PubQueryService {
         List<PubSummary> summaries = new ArrayList<>(pubIds.size());
         for (Long pubId : pubIds) {
             Pub pub = pubById.get(pubId);
-            if (pub == null) {
+            if (pub == null || pub.getExposure() != PubExposure.PUBLIC) {
                 continue;
             }
             summaries.add(PubSummary.of(pub, thumbnailByPubId.get(pubId)));
         }
         return summaries;
+    }
+
+    private Pub requirePublic(Long pubId) {
+        Pub pub = pubRepository.findById(pubId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        if (pub.getExposure() != PubExposure.PUBLIC) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        return pub;
     }
 
     private PubSearchFilter buildSearchFilter(PubFilterParams filter) {
