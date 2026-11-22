@@ -17,7 +17,9 @@ public enum PubFacilityCode {
     PRIVATE_BOOKING("단체 대관"),
     WHEELCHAIR_ACCESS("휠체어 접근"),
     OUTDOOR_SEAT("야외좌석"),
-    RESERVATION("예약가능");
+    RESERVATION("예약가능"),
+    CORKAGE("콜키지 가능"),
+    WAITING_AREA("대기공간 있음");
 
     private final String displayName;
 
